@@ -1,123 +1,138 @@
 # micropython-st7789-framebuf
-A st7789 framebuf driver for micropython-esp32s3
+基于MicroPython的ST7789显示屏驱动和GUI库
 
-## Main Features
+## 主要功能
 
-- Support RGB565 color format
-- SPI Support
-- Using framebuf
-- Support GUI Label
-- Chinese / English Font Support (Font:https://github.com/adobe-fonts/source-han-sans)
+- RGB565颜色格式支持
+- SPI支持
+- FrameBuffer支持
+- GUI控件支持
+- 中/英文显示 (字体来源:https://github.com/adobe-fonts/source-han-sans)
 
-## File Structure
+## 文件结构
 
 ```
 micropython-st7789-framebuf
 ├── code
-│   ├── st7789.py(Display driver)
-│   └── VoidEngine.py(GUI Library)
+│   ├── st7789.py(主要显示驱动)
+│   └── VoidEngine.py(GUI库)
 └── font
-    ├── SourceHanSans.mpy(Font file,size 20)
+    ├── SourceHanSans.mpy(字体文件,字体大小 20)
 ```
 
-## Functions/Classes
+## 函数/类
 
-### Display Driver (st7789.py)
+### 显示屏驱动 (st7789.py)
 
 #### class ST7789(framebuf.FrameBuffer)
 ```python
 display = ST7789(width, height, spi, dc, rst, cs=None)
 ```
-- `width`: Display width
-- `height`: Display height
-- `spi`: SPI object
-- `dc`: DC pin
-- `rst`: RST pin
-- `cs`: CS pin
+- `width`: 显示屏宽
+- `height`: 显示屏高
+- `spi`: SPI对象
+- `dc`: 数据/命令引脚
+- `rst`: 复位引脚
+- `cs`: 片选引脚
 
-· Methods:
+
+· 方法:
 
 ```python
 display.show()
 ```
-Write framebuf to the display
+在屏幕上显示FrameBuffer的内容
 
 ```python
 display.invert(mode:bool)
 ```
-Invert display color
+反转屏幕颜色
 
 ```python
 display.DrawText(x, y, text, color, offset = 17, wrap = False, w = None)
 ```
-Draw text on the display(You must download fonts/SourceHanSans.mpy in your esp32s3 device)
+在屏幕上绘制文本（你必须下载字体文件SourceHanSans.mpy到你的esp32s3设备上）
 
-- `x`: X coordinate
-- `y`: Y coordinate
-- `text`: Text to be drawn
-- `color`: Text color
-- `offset`: Offset of the font
-- `wrap`: Whether to wrap the text
-- `w`: Width of the text(if the letter are too long, it will be cut off)
+- `x`: X坐标
+- `y`: Y坐标
+- `text`: 要绘制的文本
+- `color`: 文本颜色
+- `offset`: 字体偏移量
+- `wrap`: 是否换行
+- `w`: 文本宽度（如果文本过长，将会被切断）
 
 ```python
 display.fill_round_rect(x, y, w, h, r, color)
 ```
-Draw a round rectangle on the display
+在屏幕上绘制填充圆角矩形
 
-- `x`: X coordinate
-- `y`: Y coordinate
-- `w`: Width of the rectangle
-- `h`: Height of the rectangle
-- `r`: Radius of the rectangle
-- `color`: Color of the rectangle
+- `x`: X坐标
+- `y`: Y坐标
+- `w`: 宽度
+- `h`: 高度
+- `r`: 圆角半径
+- `color`: 颜色
 
-### GUI Library (VoidEngine.py)
+### GUI库 (VoidEngine.py)
 
 #### GUIObject(x,y,w,h,text,offset=17)
 
-Basic GUI class , If a Label inherits from this class, it always have these attributes:
+GUIObject类，所有GUI控件都继承自这个类,并且包含以下属性:
 
-- `x`: X coordinate
-- `y`: Y coordinate
-- `w`: Width of the label
-- `h`: Height of the label
-- `text`: Text of the label
-- `offset`: Offset of the font
+- `x`: X坐标
+- `y`: Y坐标
+- `w`: 控件宽度
+- `h`: 控件高度
+- `text`: 控件文本（绘制位置由具体控件决定）
+- `offset`: 控件位移量
 
-and this method:
+与以下方法：
 
 ```python
 GUIObject.Draw(display)
 ```
-Draw the label on the display
+在屏幕上绘制控件
 
 #### class Label(GUIObject)
 
-Label class, inherits from GUIObject
+Label类，继承自GUIObject，用于绘制文本标签
 
 init:
 ```python
 label1 = Label(x, y, w, h, text, bg_color, text_color, offset=17)
 ```
-- `bg_color`: Background color of the label
-- `text_color`: Text color of the label
+- `bg_color`: 背景颜色
+- `text_color`: 文本颜色
 
 #### class Button(trigger)
-Warning: This class is not inherited from GUIObject.
+警告：此控件不继承自GUIObject
 
-init:
+初始化：
 ```python
 from VoidEngine import Button
-from machine import Pin
-button1 = Button(Pin(0).value)
+
+tg = lambda a:a == 1
+
+button1 = Button(tg)
 ```
 
-Methods:
+方法：
 
 ```python
 button1.trigger()
 ```
-Return True if the "trigger" is True
+当tg为True时，按钮被触发。
+
+示例：
+```python
+from VoidEngine import Button
+
+tg = lambda a:a == 1
+
+button1 = Button(tg)
+while True:
+    if button1.trigger():
+        print("Button Pressed")
+```
 
 
