@@ -73,11 +73,3 @@ class TextArea(GUIObject):
         gui.fill_round_rect(self.x, self.y, self.w, self.h, 4, self.bg_color)
         gui.fill_round_rect(self.x - 1 ,self.y - 1, self.w + 2, self.h + 2, 6, self.side_color)
         gui.DrawText(self.text, self.x, self.y + 1, self.text_color)
-
-class DropDown(GUIObject):
-    def __init__(self,x,y,w,h,text,bg_color,text_color,trigger,options,offset = 17):
-        super().__init__(x,y,w,h,text,offset)
-        self.bg_color = bg_color
-        self.text_color = text_color
-        self.trigger = trigger
-        self.options = options

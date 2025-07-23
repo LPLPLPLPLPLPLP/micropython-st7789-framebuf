@@ -3,17 +3,9 @@
 # LICENCE: GPL v3.0
 from machine import Pin,SPI
 from micropython import const
-import siyuanheiti_20 as font_20
+import SourceHanSans as font_20
 import framebuf
 import time
-# ==========CHANGE THESE TO MATCH YOUR SETUP==========
-TFT_RST_PIN = const(0)  # Pin RST
-TFT_LED_PIN = const(12) 
-TFT_DC_PIN = const(35)  # Pin DC
-TFT_CS_PIN = const(34)  # Pin CS
-TFT_CLK_PIN = const(36) # Pin Clock
-TFT_MISO_PIN = const(2) 
-TFT_MOSI_PIN = const(37)
 # ST7789命令定义 / ST7789 COMMAND DEFINITION
 ST7789_NOP = 0x00
 ST7789_SWRESET = 0x01
@@ -126,6 +118,7 @@ class ST7789(framebuf.FrameBuffer):
     def set_window(self):
         # 准备写入显示数据 / PREPARE TO WRITE DISPLAY DATA
         self.write_cmd(ST7789_RAMWR)
+        
     def invert(self,mode:bool):
         self.write_cmd(ST7789_INVON if mode else ST7789_INVOFF)
     
