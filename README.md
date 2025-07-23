@@ -1,6 +1,6 @@
 # micropython-st7789-framebuf
 基于MicroPython的ST7789显示屏驱动和GUI库
-
+[English](https://github.com/LPLPLPLPLPLPLP/micropython-st7789-framebuf/blob/main/README_EN.md)
 ## 主要功能
 
 - RGB565颜色格式支持
