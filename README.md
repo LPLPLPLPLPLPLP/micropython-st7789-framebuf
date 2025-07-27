@@ -1,6 +1,6 @@
 # micropython-st7789-framebuf
 基于MicroPython的ST7789显示屏驱动和GUI库
-[English](https://github.com/LPLPLPLPLPLPLP/micropython-st7789-framebuf/blob/main/README_EN.md)
+[English Docs HERE!](https://github.com/LPLPLPLPLPLPLP/micropython-st7789-framebuf/blob/main/README_EN.md)
 ## 主要功能
 
 - RGB565颜色格式支持
@@ -19,6 +19,16 @@ micropython-st7789-framebuf
 └── font
     ├── SourceHanSans.mpy(字体文件,字体大小 20)
 ```
+
+## 注意事项
+
+1.若您使用 ```VoidEngine.py``` 作为您的驱动库，您需要修改
+
+```VoidEngine``` Line 8 (写有CHANGE THESE SETTINGS的那一行)
+
+来匹配您的实际设置
+
+2.你需要在```st7789.py```的 Line 32处更改 MADCTL_MODE 常量来匹配您的显示屏设置
 
 ## 函数/类
 

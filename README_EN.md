@@ -20,6 +20,13 @@ micropython-st7789-framebuf
     ├── SourceHanSans.mpy(Font file,size 20)
 ```
 
+## Warning
+
+1. If you use `VoidEngine.py` as your driver library, you need to modify
+
+```VoidEngine``` Settings under Line 8(the line with CHANGE THESE SETTINGS)
+
+2. You need to change `MADCTL_MODE` constant in `st7789.py` Line 32 to match your display settings
 ## Functions/Classes
 
 ### Display Driver (st7789.py)
@@ -120,4 +127,15 @@ button1.trigger()
 ```
 Return True if the "trigger" is True
 
+For example:
+```python
+from VoidEngine import Button
+
+tg = lambda a:a == 1
+
+button1 = Button(tg)
+while True:
+    if button1.trigger():
+        print("Button Pressed")
+```
 

@@ -25,10 +25,10 @@ ST7789_COLMOD = 0x3A
 COLOR_MODE_16BIT = 0b00011101
 
 # 屏幕方向控制
-MADCTL_MY  = 0b10000000  # 行地址顺序 / ROW ADDRESS ORDER
-MADCTL_MX  = 0b01000000  # 列地址顺序 / COLUMN ADDRESS ORDER
-MADCTL_MV  = 0b00100000  # 行列交换   / SWAP ROW/COLUMN
-MADCTL_ML  = 0b00010000  # 左右交换   / SWAP LEFT/RIGHT
+MADCTL_MY  = const(0b10000000)  # 行地址顺序 / ROW ADDRESS ORDER
+MADCTL_MX  = const(0b01000000)  # 列地址顺序 / COLUMN ADDRESS ORDER
+MADCTL_MV  = const(0b00100000)  # 行列交换   / SWAP ROW/COLUMN
+MADCTL_ML  = const(0b00010000)  # 左右交换   / SWAP LEFT/RIGHT
 MADCTL_MODE = MADCTL_MY | MADCTL_MV | 0b00001010
 class ST7789(framebuf.FrameBuffer):
     def __init__(self, width, height, spi, dc, rst, cs=None):

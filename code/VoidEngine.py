@@ -5,7 +5,7 @@ from st7789 import ST7789
 from machine import SPI,Pin
 import framebuf
 from micropython import const
-
+#======CHANGE THESE SETTINGS========#
 TFT_RST_PIN = const(0)  # Pin RST
 TFT_LED_PIN = const(12) 
 TFT_DC_PIN = const(35)  # Pin DC
@@ -13,6 +13,7 @@ TFT_CS_PIN = const(34)  # Pin CS
 TFT_CLK_PIN = const(36) # Pin Clock
 TFT_MISO_PIN = const(2) 
 TFT_MOSI_PIN = const(37)
+#===================================#
 spi = SPI(2,
                 baudrate=80000000,
                 polarity=0,
