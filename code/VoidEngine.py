@@ -13,6 +13,9 @@ TFT_CS_PIN = const(34)  # Pin CS
 TFT_CLK_PIN = const(36) # Pin Clock
 TFT_MISO_PIN = const(2) 
 TFT_MOSI_PIN = const(37)
+
+SCR_WIDTH = const(320)
+SCR_HEIGHT = const(206)
 #===================================#
 spi = SPI(2,
                 baudrate=80000000,
@@ -26,7 +29,7 @@ dc = Pin(TFT_DC_PIN,Pin.OUT)
 cs = Pin(TFT_CS_PIN,Pin.OUT)
 rst= Pin(TFT_RST_PIN,Pin.OUT)
     
-gui = ST7789(320, 206, spi, dc, rst, cs)
+gui = ST7789(SCR_WIDTH, SCR_HEIGHT, spi, dc, rst, cs)
 
 #=======GUI CLASSES======#
 class GUIObject:

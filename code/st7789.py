@@ -122,12 +122,14 @@ class ST7789(framebuf.FrameBuffer):
     def invert(self,mode:bool):
         self.write_cmd(ST7789_INVON if mode else ST7789_INVOFF)
     
-    def DrawText(self, text, x, y, color, offset=17, wrap=False, w = None):
+    def DrawText(self, text, x, y, color, offset=17, wrap=False, w = None, buffer = None):
         orig_x = x + offset 
         curr_x = orig_x
         curr_y = y
-        
-        fbuf = super()
+        if buffer is None:
+            fbuf = self.buffer
+        else:
+            fbuf = super()
         get_ch = font_20.get_ch
         memviews = b''
         total_width = 0
@@ -163,11 +165,11 @@ class ST7789(framebuf.FrameBuffer):
         # Draw a filled rounded rectangle
         # 绘制填充圆角矩形
         self.fill_circle(x + r, y + r, r, color)
-        self.fill_circle(x + r , y - r + h - 1, r, color)
-        self.fill_rect(x + r, y, w - r, h , color)
-        self.fill_rect(x , y + r, w + r, h - 2 * r , color)
-        self.fill_circle(x + w - 1 + r, y + r, r, color)
-        self.fill_circle(x + w - 1 + r, y - r + h - 1, r, color)
+        self.fill_circle(x + w - r, y + r, r, color)
+        self.fill_rect(x + r, y, w - (2 * r), h, color)
+        self.fill_circle(x + r, y + h - r, r, color)
+        self.fill_circle(x + w - r, y + h - r, r, color)
+        self.fill_rect(x, y + r, w, h - (2 * r), color)
 
     def show(self):
         self.set_window()
