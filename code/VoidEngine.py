@@ -5,6 +5,7 @@ from st7789 import ST7789
 from machine import SPI,Pin
 import framebuf
 from micropython import const
+import asyncio
 #======CHANGE THESE SETTINGS========#
 TFT_RST_PIN = const(0)  # Pin RST
 TFT_LED_PIN = const(12) 
@@ -31,6 +32,11 @@ rst= Pin(TFT_RST_PIN,Pin.OUT)
     
 gui = ST7789(SCR_WIDTH, SCR_HEIGHT, spi, dc, rst, cs)
 
+async def refresh_timer(t):#t (sec)
+    gui.show()
+    while True:
+        await asyncio.sleep(t)
+        gui.show()
 #=======GUI CLASSES======#
 class GUIObject:
     def __init__(self,x,y,w,h,text,offset = 17):
