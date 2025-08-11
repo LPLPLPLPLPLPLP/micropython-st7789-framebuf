@@ -48,13 +48,21 @@ class GUIObject:
 
     def Draw():pass
         
-class Button:# It doesn't belong to GUIObject/不属于GUIObject
-    def __init__(self,trigger):
+class Button(GUIObject):
+    def __init__(self,x,y,w,h,text,bg_color,text_color,trigger):
+        super().__init__(x,y,w,h,text)
+        self.bg_color = bg_color
+        self.text_color = text_color
         self.trigger = trigger
 
-    def Draw(self,x,y,w,h,text,bg_color,text_color,offset = 17):
-        gui.fill_round_rect(x+offset, y, w, h, 4, bg_color)
-        gui.DrawText(text, x + 1, y + 2, text_color)
+    def Draw(self):
+        x = self.x
+        y = self.y
+        w = self.w
+        h = self.h
+        offset = 17
+        gui.fill_round_rect(x+offset, y, w, h, 4, self.bg_color)
+        gui.DrawText(self.text, x + 1, y + 2, self.text_color)
 
 class Label(GUIObject):
     def __init__(self,x,y,w,h,text,bg_color,text_color,offset=17):

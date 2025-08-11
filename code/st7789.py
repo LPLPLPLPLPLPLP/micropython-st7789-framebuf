@@ -166,10 +166,10 @@ class ST7789(framebuf.FrameBuffer):
         # 绘制填充圆角矩形
         self.fill_circle(x + r, y + r, r, color)
         self.fill_circle(x + w - r, y + r, r, color)
-        self.fill_rect(x + r, y, w - (2 * r), h, color)
+        self.fill_rect(x + r, y, w - (2 * r), h + 1, color)
         self.fill_circle(x + r, y + h - r, r, color)
         self.fill_circle(x + w - r, y + h - r, r, color)
-        self.fill_rect(x, y + r, w, h - (2 * r), color)
+        self.fill_rect(x, y + r, w + 1, h - (2 * r), color)
 
     def show(self):
         self.set_window()

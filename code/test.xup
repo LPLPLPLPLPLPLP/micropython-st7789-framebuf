@@ -1,2 +1,4 @@
-<text>Hello_World<x=0,y=0,color=0x0000>
-LP_OVER
+Row(0,0):{
+    Label(128,20,"Hello_World",0x000F,0xFFFF)
+    Button(60,20,"  btn1",0x0F00,0xFFFF,True==False)
+}
