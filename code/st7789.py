@@ -127,9 +127,9 @@ class ST7789(framebuf.FrameBuffer):
         curr_x = orig_x
         curr_y = y
         if buffer is None:
-            fbuf = self.buffer
-        else:
             fbuf = super()
+        else:
+            fbuf = buffer
         get_ch = font_20.get_ch
         memviews = b''
         total_width = 0
