@@ -19,12 +19,12 @@ SCR_WIDTH = const(320)
 SCR_HEIGHT = const(206)
 #===================================#
 spi = SPI(2,
-                baudrate=80000000,
-                polarity=0,
-                phase=0,
-                sck=Pin(TFT_CLK_PIN),
-                mosi=Pin(TFT_MOSI_PIN),
-                miso=Pin(TFT_MISO_PIN))
+baudrate=80000000,
+polarity=0,
+phase=0,
+sck=Pin(TFT_CLK_PIN),
+mosi=Pin(TFT_MOSI_PIN),
+miso=Pin(TFT_MISO_PIN))
 
 dc = Pin(TFT_DC_PIN,Pin.OUT)
 cs = Pin(TFT_CS_PIN,Pin.OUT)
@@ -42,7 +42,7 @@ OptionConfirm = None
 OptionChange = None
 #=======GUI CLASSES======#
 class GUIObject:
-    def __init__(self,x,y,w,h,text,offset = 17):
+    def __init__(self, x, y, w, h, text, offset = 17):
         self.x = x + offset
         self.y = y
         self.w = w
@@ -56,10 +56,10 @@ class Screen:
         self.ObjectLayer = []
         self.BackGroundColor = 0x0000
     
-    def AddObject(self,obj:GUIObject):
+    def AddObject(self, obj:GUIObject):
         self.ObjectLayer.append(obj)
     
-    def SwapObjectsLayer(self,obj1:GUIObject,obj2:GUIObject):
+    def SwapObjectsLayer(self, obj1:GUIObject, obj2:GUIObject):
         tmp = self.ObjectLayer.index(obj1)
         self.ObjectLayer[tmp] = obj2
         self.ObjectLayer.index(obj2) = tmp
@@ -91,8 +91,8 @@ class Button(GUIObject):
         tft.DrawText(self.text, x + 1, y + 2, self.text_color)
 
 class Label(GUIObject):
-    def __init__(self,x,y,w,h,text,bg_color,text_color,offset=17):
-        super().__init__(x,y,w,h,text,offset)
+    def __init__(self, x, y, w, h, text, bg_color, text_color, offset=17):
+        super().__init__(x, y, w, h, text, offset)
         self.bg_color = bg_color
         self.text_color = text_color
 
@@ -101,7 +101,8 @@ class Label(GUIObject):
         tft.DrawText(self.text, self.x, self.y + 1, self.text_color, w = self.w)
 
 class TextArea(GUIObject):
-    def __init__(self,x,y,w,h,text,bg_color,text_color,side_color,offset = 17):
+    def __init__(self, x, y, w, h, text,
+                bg_color, text_color, side_color, offset = 17):
         super().__init__(x,y,w,h,text,offset)
         self.bg_color = bg_color
         self.text_color = text_color
