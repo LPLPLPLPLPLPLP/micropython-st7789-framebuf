@@ -30,13 +30,16 @@ dc = Pin(TFT_DC_PIN,Pin.OUT)
 cs = Pin(TFT_CS_PIN,Pin.OUT)
 rst= Pin(TFT_RST_PIN,Pin.OUT)
     
-gui = ST7789(SCR_WIDTH, SCR_HEIGHT, spi, dc, rst, cs)
+tft = ST7789(SCR_WIDTH, SCR_HEIGHT, spi, dc, rst, cs)
 
 async def refresh_timer(t):#t (sec)
-    gui.show()
+    tft.show()
     while True:
         await asyncio.sleep(t)
-        gui.show()
+        tft.show()
+#=======GUI SETTINGS=====#
+OptionConfirm = None
+OptionChange = None
 #=======GUI CLASSES======#
 class GUIObject:
     def __init__(self,x,y,w,h,text,offset = 17):
@@ -47,7 +50,30 @@ class GUIObject:
         self.text = text
 
     def Draw():pass
-        
+
+class Screen:
+    def __init__(self):
+        self.ObjectLayer = []
+        self.BackGroundColor = 0x0000
+    
+    def AddObject(self,obj:GUIObject):
+        self.ObjectLayer.append(obj)
+    
+    def SwapObjectsLayer(self,obj1:GUIObject,obj2:GUIObject):
+        tmp = self.ObjectLayer.index(obj1)
+        self.ObjectLayer[tmp] = obj2
+        self.ObjectLayer.index(obj2) = tmp
+
+    def SetBackGroundColor(self,color):
+        self.BackGroundColor = color
+
+    def Draw(self):
+        OL = self.ObjectLayer
+        tft.fill(self.BackGroundColor)
+        for i in range(len(OL) - 1, -1, -1):
+            OL[i].Draw()
+        tft.show()
+
 class Button(GUIObject):
     def __init__(self,x,y,w,h,text,bg_color,text_color,trigger):
         super().__init__(x,y,w,h,text)
@@ -61,8 +87,8 @@ class Button(GUIObject):
         w = self.w
         h = self.h
         offset = 17
-        gui.fill_round_rect(x+offset, y, w, h, 4, self.bg_color)
-        gui.DrawText(self.text, x + 1, y + 2, self.text_color)
+        tft.fill_round_rect(x+offset, y, w, h, 4, self.bg_color)
+        tft.DrawText(self.text, x + 1, y + 2, self.text_color)
 
 class Label(GUIObject):
     def __init__(self,x,y,w,h,text,bg_color,text_color,offset=17):
@@ -71,8 +97,8 @@ class Label(GUIObject):
         self.text_color = text_color
 
     def Draw(self):
-        gui.fill_rect(self.x, self.y, self.w, self.h, self.bg_color)
-        gui.DrawText(self.text, self.x, self.y + 1, self.text_color, w = self.w)
+        tft.fill_rect(self.x, self.y, self.w, self.h, self.bg_color)
+        tft.DrawText(self.text, self.x, self.y + 1, self.text_color, w = self.w)
 
 class TextArea(GUIObject):
     def __init__(self,x,y,w,h,text,bg_color,text_color,side_color,offset = 17):
@@ -82,12 +108,12 @@ class TextArea(GUIObject):
         self.side_color = side_color
 
     def Draw(self):
-        gui.fill_round_rect(self.x, self.y, self.w, self.h, 4, self.bg_color)
-        gui.fill_round_rect(self.x - 1 ,self.y - 1, self.w + 2, self.h + 2, 6, self.side_color)
-        gui.DrawText(self.text, self.x, self.y + 1, self.text_color)
+        tft.fill_round_rect(self.x, self.y, self.w, self.h, 4, self.bg_color)
+        tft.fill_round_rect(self.x - 1 ,self.y - 1, self.w + 2, self.h + 2, 6, self.side_color)
+        tft.DrawText(self.text, self.x, self.y + 1, self.text_color)
 
     def Update(self,text):
         self.text = text
-        gui.fill_round_rect(self.x, self.y, self.w, self.h, 4, self.bg_color)
-        gui.fill_round_rect(self.x - 1 ,self.y - 1, self.w + 2, self.h + 2, 6, self.side_color)
-        gui.DrawText(self.text, self.x, self.y + 1, self.text_color)
+        tft.fill_round_rect(self.x, self.y, self.w, self.h, 4, self.bg_color)
+        tft.fill_round_rect(self.x - 1 ,self.y - 1, self.w + 2, self.h + 2, 6, self.side_color)
+        tft.DrawText(self.text, self.x, self.y + 1, self.text_color)
