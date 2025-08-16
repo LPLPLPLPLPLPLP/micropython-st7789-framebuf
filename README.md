@@ -114,8 +114,7 @@ label1 = Label(x, y, w, h, text, bg_color, text_color, offset=17)
 - `bg_color`: 背景颜色
 - `text_color`: 文本颜色
 
-#### class Button(trigger)
-警告：此控件不继承自GUIObject
+#### class Button(GUIObject)
 
 初始化：
 ```python
@@ -123,7 +122,7 @@ from VoidEngine import Button
 
 tg = lambda a:a == 1
 
-button1 = Button(tg)
+button1 = Button(x,y,w,h,text,bg_color,text_color,tg)
 ```
 
 方法：
