@@ -122,7 +122,7 @@ class ST7789(framebuf.FrameBuffer):
     def invert(self,mode:bool):
         self.write_cmd(ST7789_INVON if mode else ST7789_INVOFF)
     
-    def DrawText(self, text, x, y, color, offset=17, wrap=False, w = None, buffer = None):
+    def DrawText(self, text:str, x:int, y:int, color:int, offset = 17, wrap = False, w = None, buffer = None):
         orig_x = x + offset 
         curr_x = orig_x
         curr_y = y
@@ -160,6 +160,12 @@ class ST7789(framebuf.FrameBuffer):
                 curr_y += 20
         return memviews,total_width,20
     
+    def curved_side_rect(self, x:int, y:int, w:int, h:int, color:int) -> int:
+        r = h // 2
+        self.fill_circle(x + r, y + r, r, color)
+        self.fill_rect(x + r, y, w - h, h, color)
+        self.fill_circle(x + w - r, y + r, r, color)
+        return r
     
     def fill_round_rect(self, x, y, w, h, r, color):
         # Draw a filled rounded rectangle

@@ -49,7 +49,9 @@ class GUIObject:
         self.h = h
         self.text = text
 
-    def Draw():pass
+    def Draw(self):pass
+
+    def Logic(self):pass
 
 class Screen:
     def __init__(self):
@@ -118,5 +120,32 @@ class TextArea(GUIObject):
         tft.fill_round_rect(self.x, self.y, self.w, self.h, 4, self.bg_color)
         tft.fill_round_rect(self.x - 1 ,self.y - 1, self.w + 2, self.h + 2, 6, self.side_color)
         tft.DrawText(self.text, self.x, self.y + 1, self.text_color)
+
+class Switch(GUIObject):
+    def __init__(self, x, y, w, h, bg_color, offset = 17):
+        super().__init__(x, y, w, h, "", offset)
+        self.bg_color = bg_color
+        self.state = False
+
+    def GetSwitchStatus(self) -> bool:
+        return self.state
+
+    def Draw(self) -> None:
+        x = self.x
+        y = self.y
+        w = self.w
+        h = self.h
+        r = tft.curved_side_rect(x, y, w, h, self.bg_color)
+        side_space = h // 10 if (h // 10) else 1
+        if self.state:
+            tft.fill_circle(x + w - r, y + r, r - side_space, self.bg_color)
+        else:
+            tft.fill_circle(x + r, y + r, r - side_space, self.bg_color)
+
+
+    def Logic(self) -> None:
+        if OptionChange:
+            self.state = not self.state
+
 
 gui = Screen()
