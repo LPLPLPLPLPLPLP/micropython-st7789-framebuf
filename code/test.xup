@@ -1,4 +1,0 @@
-Row(0,0):{
-    Label(128,20,"Hello_World",0x000F,0xFFFF)
-    Button(60,20,"  btn1",0x0F00,0xFFFF,True==False)
-}

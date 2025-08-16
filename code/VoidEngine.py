@@ -117,3 +117,5 @@ class TextArea(GUIObject):
         tft.fill_round_rect(self.x, self.y, self.w, self.h, 4, self.bg_color)
         tft.fill_round_rect(self.x - 1 ,self.y - 1, self.w + 2, self.h + 2, 6, self.side_color)
         tft.DrawText(self.text, self.x, self.y + 1, self.text_color)
+
+gui = Screen()
