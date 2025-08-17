@@ -61,15 +61,15 @@ class Screen:
     def AddObject(self, obj:GUIObject):
         self.ObjectLayer.append(obj)
     
-    def SwapObjectsLayer(self, obj1:GUIObject, obj2:GUIObject):
+    def SwapObjectsLayer(self, obj1:GUIObject, obj2:GUIObject) -> None:
         tmp = self.ObjectLayer.index(obj1)
         self.ObjectLayer[tmp] = obj2
-        self.ObjectLayer.index(obj2) = tmp
+        self.ObjectLayer[self.ObjectLayer.index(obj2)] = obj1
 
-    def SetBackGroundColor(self,color):
+    def SetBackGroundColor(self, color:int) -> None:
         self.BackGroundColor = color
 
-    def Draw(self):
+    def Draw(self) -> None:
         OL = self.ObjectLayer
         tft.fill(self.BackGroundColor)
         for i in range(len(OL) - 1, -1, -1):
