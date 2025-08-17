@@ -144,7 +144,7 @@ class Switch(GUIObject):
 
 
     def Logic(self) -> None:
-        if OptionChange:
+        if OptionConfirm:
             self.state = not self.state
 
 
