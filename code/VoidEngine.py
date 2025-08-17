@@ -69,11 +69,13 @@ class Screen:
     def SetBackGroundColor(self, color:int) -> None:
         self.BackGroundColor = color
 
-    def Draw(self) -> None:
+    def Update(self) -> None:
         OL = self.ObjectLayer
         tft.fill(self.BackGroundColor)
         for i in range(len(OL) - 1, -1, -1):
             OL[i].Draw()
+        for obj in OL:
+            obj.Logic()
         tft.show()
 
 class Button(GUIObject):
@@ -149,3 +151,10 @@ class Switch(GUIObject):
 
 
 gui = Screen()
+
+# Example
+if __name__ == "__main__":
+    gui.SetBackGroundColor(0x0000)
+    label1 = Label(0,0,160,20,"Hello World",0x333F,0xFFFF)
+    gui.AddObject(label1)
+    gui.Update()
