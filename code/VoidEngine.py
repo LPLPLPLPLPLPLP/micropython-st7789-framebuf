@@ -1,5 +1,5 @@
 # st7789 framebuf driver for MicroPython
-# by LP_OVER
+# VoidEngineby LP_OVER
 # LICENCE: GPL v3.0
 from st7789 import ST7789
 from machine import SPI,Pin
@@ -68,6 +68,8 @@ class Screen(ST7789):
         self.OptionConfirm = OptionConfirm
         self.OptionChange = OptionChange
         self.OptionChangeActive = False
+        self.HighLightLocation = (0,0)
+        self.HighLightAttr = (0,0)
 
     
     def AddObject(self, obj:GUIObject):
@@ -107,15 +109,17 @@ class Screen(ST7789):
             else:
                 self.OptionChangeActive = False
 
-
     def Update(self) -> None:
         OL = self.ObjectLayer
         self.display.fill(self.BackGroundColor)
+        self.GUILogic()
         for i in range(len(OL) - 1, -1, -1):
             Guiobj = OL[i]
             Guiobj.Draw()
             if Guiobj == self.SelsetLabel:
-                Guiobj.HighLight()
+                self.display.rect(Guiobj.x - 2,Guiobj.y - 2,Guiobj.w + 4,Guiobj.h + 4,0x3333)
+                self.HighLightLocation = (Guiobj.x - 2,Guiobj.y - 2)
+                self.HighLightAttr = (Guiobj.w + 4,Guiobj.h + 4)
         self.display.show()
 
 
@@ -134,20 +138,12 @@ class Button(GUIObject):
         self.scr.AddObject(self)
         self.active = False
 
-    def HighLight(self):
-        x = self.x
-        y = self.y
-        w = self.w
-        h = self.h
-        self.scr.display.rect(x - 2,y - 2,w + 4,h + 4,0x3333)
-
     def Draw(self,scr:Screen = gui):
         x = self.x
         y = self.y
         w = self.w
         h = self.h
-        offset = 17
-        scr.display.fill_round_rect(x+offset, y, w, h, 4, self.bg_color)
+        scr.display.fill_round_rect(x, y, w, h, 4, self.bg_color)
         scr.display.DrawText(self.text, x + 1, y + 2, self.text_color)
 
     def Logic(self,scr:Screen = gui):
@@ -211,13 +207,6 @@ class Switch(GUIObject):
         side_space = h // 10 if (h // 10) else 1
         self.circle_location_on = [x + w - side_space + r,y + r,r - side_space]
         self.circle_location_off = [x - side_space + (3 * r),y + r,r - side_space]
-
-    def HighLight(self):
-        x = self.x
-        y = self.y
-        w = self.w
-        h = self.h
-        self.scr.display.rect(x - 2,y - 2,w + 4,h + 4,0x3333)
 
     def GetSwitchStatus(self) -> bool:
         return self.state
