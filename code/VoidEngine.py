@@ -104,7 +104,6 @@ class Screen(ST7789):
                     if self.SelsetIndex >= len(self.ChangeableObjects):
                         self.SelsetIndex = 0
                     self.SelsetLabel = self.ChangeableObjects[self.SelsetIndex]
-                    time.sleep(0.1)
                 self.OptionChangeActive = True
             else:
                 self.OptionChangeActive = False
@@ -250,4 +249,3 @@ class Switch(GUIObject):
                 now_c = (now_c_B + now_c_G + now_c_R)
                 now_x += (tg_x - now_x) // 2
                 scr.display.show()
-            #time.sleep(0.1)
