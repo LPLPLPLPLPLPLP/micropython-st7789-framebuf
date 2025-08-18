@@ -67,6 +67,7 @@ class Screen(ST7789):
         self.SelsetIndex = 0
         self.OptionConfirm = OptionConfirm
         self.OptionChange = OptionChange
+        self.OptionChangeActive = False
 
     
     def AddObject(self, obj:GUIObject):
@@ -96,12 +97,18 @@ class Screen(ST7789):
     def GUILogic(self) -> None:
         for i in self.ChangeableObjects:
             i.Logic(self)
-            if self.OptionChange():
-                self.SelsetIndex += 1
-                if self.SelsetIndex >= len(self.ChangeableObjects) - 1:
-                    self.SelsetIndex = 0
+            if self.OptionChange() :
+                if not self.OptionChangeActive:
+                    self.SelsetIndex += 1
+                    print(self.SelsetIndex,len(self.ChangeableObjects))
+                    if self.SelsetIndex >= len(self.ChangeableObjects):
+                        self.SelsetIndex = 0
+                    self.SelsetLabel = self.ChangeableObjects[self.SelsetIndex]
+                    time.sleep(0.1)
+                self.OptionChangeActive = True
+            else:
+                self.OptionChangeActive = False
 
-                self.SelsetLabel = self.ChangeableObjects[self.SelsetIndex]
 
     def Update(self) -> None:
         OL = self.ObjectLayer
@@ -118,11 +125,16 @@ tft = gui.display
 
 class Button(GUIObject):
     def __init__(self,x,y,w,h,text,bg_color,text_color,trigger):
-        super().__init__(x, y, w, h, gui, text)
+        super().__init__(x, y, w, h, text, gui)
         self.bg_color = bg_color
         self.text_color = text_color
         self.trigger = trigger
         self.scr.RegisterChangeableObjects(self)
+        self.active = False
+
+    def HighLight(self):
+        pass
+
     def Draw(self,scr:Screen = gui):
         x = self.x
         y = self.y
@@ -134,7 +146,13 @@ class Button(GUIObject):
 
     def Logic(self,scr:Screen = gui):
         if scr.OptionConfirm() and scr.SelsetLabel == self:
-            self.trigger()
+            if not self.active:
+                self.trigger()
+            self.active = True
+        else:
+            self.active = False
+
+
 
 
 class Label(GUIObject):
@@ -182,8 +200,8 @@ class Switch(GUIObject):
         self.r = h // 2
         r = self.r
         side_space = h // 10 if (h // 10) else 1
-        self.circle_location_on = [x + w - r - 1,y + r,r - side_space]
-        self.circle_location_off = [x + r - 1,y + r,r - side_space]
+        self.circle_location_on = [x + w - r - side_space,y + r,r - side_space]
+        self.circle_location_off = [x + r - side_space,y + r,r - side_space]
 
 
     def GetSwitchStatus(self) -> bool:
@@ -195,7 +213,7 @@ class Switch(GUIObject):
         w = self.w
         h = self.h
         r = self.r
-        tft.curved_side_rect(x - (2 * r), y, w, h, self.bg_color if self.state else 0xaa7a)
+        scr.display.curved_side_rect(x - (2 * r), y, w, h, self.bg_color if self.state else 0xaa7a)
         draw_state = self.circle_location_on if self.state else self.circle_location_off
         if self.state:
             scr.display.fill_circle(draw_state[0], draw_state[1], draw_state[2], self.color)
@@ -204,5 +222,32 @@ class Switch(GUIObject):
 
     def Logic(self,scr:Screen) -> None:
         if scr.OptionConfirm() and scr.SelsetLabel == self:
+            x = self.x
+            y = self.y
+            w = self.w
+            h = self.h
+            r = self.r
+            now_c = self.color if self.state else self.bg_color
+            now_x = self.circle_location_on[0] if self.state else self.circle_location_off[0]
             self.state = not self.state
-            time.sleep(0.1)
+            draw_state = self.circle_location_on if self.state else self.circle_location_off
+
+            B = (self.bg_color//256)*256
+            G = (self.bg_color - B)//16 * 16
+            R = (self.bg_color - B - G)
+        
+            tg_c = [B,G,R] if self.state else [0xaa00,0x0070,0x000a]
+            tg_x = draw_state[0] if self.state else draw_state[0]
+            for _ in range(8):
+                scr.display.curved_side_rect(x - (2 * r), y, w, h, now_c)
+                scr.display.fill_circle(now_x, draw_state[1], draw_state[2], self.color)
+                now_c_B = (now_c//256)*256
+                now_c_G = (now_c - now_c_B)//16 * 16
+                now_c_R = (now_c - now_c_B - now_c_G)
+                now_c_B = (now_c_B + (tg_c[0] - now_c_B)) // 2
+                now_c_G = (now_c_G + (tg_c[1] - now_c_G)) // 2
+                now_c_R = (now_c_R + (tg_c[2] - now_c_R)) // 2
+                now_c = (now_c_B + now_c_G + now_c_R)
+                now_x += (tg_x - now_x) // 2
+                scr.display.show()
+            #time.sleep(0.1)
