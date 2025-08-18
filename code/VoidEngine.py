@@ -100,7 +100,6 @@ class Screen(ST7789):
             if self.OptionChange() :
                 if not self.OptionChangeActive:
                     self.SelsetIndex += 1
-                    print(self.SelsetIndex,len(self.ChangeableObjects))
                     if self.SelsetIndex >= len(self.ChangeableObjects):
                         self.SelsetIndex = 0
                     self.SelsetLabel = self.ChangeableObjects[self.SelsetIndex]
@@ -113,7 +112,10 @@ class Screen(ST7789):
         OL = self.ObjectLayer
         self.display.fill(self.BackGroundColor)
         for i in range(len(OL) - 1, -1, -1):
-            OL[i].Draw()
+            Guiobj = OL[i]
+            Guiobj.Draw()
+            if Guiobj == self.SelsetLabel:
+                Guiobj.HighLight()
         self.display.show()
 
 
@@ -129,10 +131,15 @@ class Button(GUIObject):
         self.text_color = text_color
         self.trigger = trigger
         self.scr.RegisterChangeableObjects(self)
+        self.scr.AddObject(self)
         self.active = False
 
     def HighLight(self):
-        pass
+        x = self.x
+        y = self.y
+        w = self.w
+        h = self.h
+        self.scr.display.rect(x - 2,y - 2,w + 4,h + 4,0x3333)
 
     def Draw(self,scr:Screen = gui):
         x = self.x
@@ -157,6 +164,7 @@ class Button(GUIObject):
 class Label(GUIObject):
     def __init__(self, x, y, w, h, text, bg_color, text_color, offset=17):
         super().__init__(x, y, w, h, text, gui, offset)
+        self.scr.AddObject(self)
         self.bg_color = bg_color
         self.text_color = text_color
 
@@ -174,6 +182,7 @@ class TextArea(GUIObject):
     def __init__(self, x, y, w, h, text,
                 bg_color, text_color, side_color, offset = 17):
         super().__init__(x, y, w, h, gui, text, offset)
+        self.scr.AddObject(self)
         self.bg_color = bg_color
         self.text_color = text_color
         self.side_color = side_color
@@ -196,12 +205,19 @@ class Switch(GUIObject):
         self.color = color
         self.state = False
         self.scr.RegisterChangeableObjects(self)
+        self.scr.AddObject(self)
         self.r = h // 2
         r = self.r
         side_space = h // 10 if (h // 10) else 1
-        self.circle_location_on = [x + w - r - side_space,y + r,r - side_space]
-        self.circle_location_off = [x + r - side_space,y + r,r - side_space]
+        self.circle_location_on = [x + w - side_space + r,y + r,r - side_space]
+        self.circle_location_off = [x - side_space + (3 * r),y + r,r - side_space]
 
+    def HighLight(self):
+        x = self.x
+        y = self.y
+        w = self.w
+        h = self.h
+        self.scr.display.rect(x - 2,y - 2,w + 4,h + 4,0x3333)
 
     def GetSwitchStatus(self) -> bool:
         return self.state
@@ -212,7 +228,7 @@ class Switch(GUIObject):
         w = self.w
         h = self.h
         r = self.r
-        scr.display.curved_side_rect(x - (2 * r), y, w, h, self.bg_color if self.state else 0xaa7a)
+        scr.display.curved_side_rect(x, y, w, h, self.bg_color if self.state else 0xaa7a)
         draw_state = self.circle_location_on if self.state else self.circle_location_off
         if self.state:
             scr.display.fill_circle(draw_state[0], draw_state[1], draw_state[2], self.color)
@@ -238,7 +254,7 @@ class Switch(GUIObject):
             tg_c = [B,G,R] if self.state else [0xaa00,0x0070,0x000a]
             tg_x = draw_state[0] if self.state else draw_state[0]
             for _ in range(8):
-                scr.display.curved_side_rect(x - (2 * r), y, w, h, now_c)
+                scr.display.curved_side_rect(x, y, w, h, now_c)
                 scr.display.fill_circle(now_x, draw_state[1], draw_state[2], self.color)
                 now_c_B = (now_c//256)*256
                 now_c_G = (now_c - now_c_B)//16 * 16
