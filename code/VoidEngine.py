@@ -6,6 +6,7 @@ from machine import SPI,Pin
 import framebuf
 from micropython import const
 import asyncio
+import time
 #======CHANGE THESE SETTINGS========#
 TFT_RST_PIN = const(0)  # Pin RST
 TFT_LED_PIN = const(12) 
@@ -30,7 +31,6 @@ dc = Pin(TFT_DC_PIN,Pin.OUT)
 cs = Pin(TFT_CS_PIN,Pin.OUT)
 rst= Pin(TFT_RST_PIN,Pin.OUT)
     
-tft = ST7789(SCR_WIDTH, SCR_HEIGHT, spi, dc, rst, cs)
 
 async def refresh_timer(t):#t (sec)
     tft.show()
@@ -40,23 +40,34 @@ async def refresh_timer(t):#t (sec)
 #=======GUI SETTINGS=====#
 OptionConfirm = None
 OptionChange = None
-#=======GUI CLASSES======#
+#=======GUI BASIC CLASSES======#
 class GUIObject:
-    def __init__(self, x, y, w, h, text, offset = 17):
+    def __init__(self, x, y, w, h, text, scr, offset = 17):
         self.x = x + offset
         self.y = y
         self.w = w
         self.h = h
         self.text = text
+        self.scr = scr
+
 
     def Draw(self):pass
 
     def Logic(self):pass
 
-class Screen:
+
+class Screen(ST7789):
     def __init__(self):
+        super().__init__(SCR_WIDTH, SCR_HEIGHT, spi, dc, rst, cs)
         self.ObjectLayer = []
         self.BackGroundColor = 0x0000
+        self.display:ST7789 = super()
+        self.ChangeableObjects = []
+        self.SelsetLabel:GUIObject = None
+        self.SelsetIndex = 0
+        self.OptionConfirm = OptionConfirm
+        self.OptionChange = OptionChange
+
     
     def AddObject(self, obj:GUIObject):
         self.ObjectLayer.append(obj)
@@ -66,95 +77,132 @@ class Screen:
         self.ObjectLayer[tmp] = obj2
         self.ObjectLayer[self.ObjectLayer.index(obj2)] = obj1
 
+    def RegisterChangeableObjects(self,gui_obj:GUIObject) -> None:
+        self.ChangeableObjects.append(gui_obj)
+        if self.SelsetLabel is None:
+            self.SelsetLabel = self.ChangeableObjects[0]
+
+    def UnregisterChangeableObjects(self,gui_obj:GUIObject) -> None:
+        try:
+            if self.SelsetLabel == gui_obj:
+                self.SelsetLabel = self.ChangeableObjects[0]
+        except:
+            self.SelsetLabel = None
+        self.ChangeableObjects.pop(self.ChangeableObjects.index(gui_obj))
+
     def SetBackGroundColor(self, color:int) -> None:
         self.BackGroundColor = color
 
+    def GUILogic(self) -> None:
+        for i in self.ChangeableObjects:
+            i.Logic(self)
+            if self.OptionChange():
+                self.SelsetIndex += 1
+                if self.SelsetIndex >= len(self.ChangeableObjects) - 1:
+                    self.SelsetIndex = 0
+
+                self.SelsetLabel = self.ChangeableObjects[self.SelsetIndex]
+
     def Update(self) -> None:
         OL = self.ObjectLayer
-        tft.fill(self.BackGroundColor)
+        self.display.fill(self.BackGroundColor)
         for i in range(len(OL) - 1, -1, -1):
             OL[i].Draw()
-        for obj in OL:
-            obj.Logic()
-        tft.show()
+        self.display.show()
+
+
+gui = Screen()
+tft = gui.display
+
+# GUI LABEL CLASSES #
 
 class Button(GUIObject):
     def __init__(self,x,y,w,h,text,bg_color,text_color,trigger):
-        super().__init__(x,y,w,h,text)
+        super().__init__(x, y, w, h, gui, text)
         self.bg_color = bg_color
         self.text_color = text_color
         self.trigger = trigger
-
-    def Draw(self):
+        self.scr.RegisterChangeableObjects(self)
+    def Draw(self,scr:Screen = gui):
         x = self.x
         y = self.y
         w = self.w
         h = self.h
         offset = 17
-        tft.fill_round_rect(x+offset, y, w, h, 4, self.bg_color)
-        tft.DrawText(self.text, x + 1, y + 2, self.text_color)
+        scr.display.fill_round_rect(x+offset, y, w, h, 4, self.bg_color)
+        scr.display.DrawText(self.text, x + 1, y + 2, self.text_color)
+
+    def Logic(self,scr:Screen = gui):
+        if scr.OptionConfirm() and scr.SelsetLabel == self:
+            self.trigger()
+
 
 class Label(GUIObject):
     def __init__(self, x, y, w, h, text, bg_color, text_color, offset=17):
-        super().__init__(x, y, w, h, text, offset)
+        super().__init__(x, y, w, h, text, gui, offset)
         self.bg_color = bg_color
         self.text_color = text_color
 
-    def Draw(self):
-        tft.fill_rect(self.x, self.y, self.w, self.h, self.bg_color)
-        tft.DrawText(self.text, self.x, self.y + 1, self.text_color, w = self.w)
+    def Update(self,text:str,scr:Screen = gui):
+        self.text = text
+        scr.display.fill_rect(self.x, self.y, self.w, self.h, self.bg_color)
+        scr.display.DrawText(self.text, self.x, self.y + 1, self.text_color, w = self.w)
+
+
+    def Draw(self,scr:Screen = gui):
+        scr.display.fill_rect(self.x, self.y, self.w, self.h, self.bg_color)
+        scr.display.DrawText(self.text, self.x, self.y + 1, self.text_color, w = self.w)
 
 class TextArea(GUIObject):
     def __init__(self, x, y, w, h, text,
                 bg_color, text_color, side_color, offset = 17):
-        super().__init__(x,y,w,h,text,offset)
+        super().__init__(x, y, w, h, gui, text, offset)
         self.bg_color = bg_color
         self.text_color = text_color
         self.side_color = side_color
 
-    def Draw(self):
-        tft.fill_round_rect(self.x, self.y, self.w, self.h, 4, self.bg_color)
-        tft.fill_round_rect(self.x - 1 ,self.y - 1, self.w + 2, self.h + 2, 6, self.side_color)
-        tft.DrawText(self.text, self.x, self.y + 1, self.text_color)
+    def Draw(self,scr:Screen = gui):
+        scr.display.fill_round_rect(self.x, self.y, self.w, self.h, 4, self.bg_color)
+        scr.display.fill_round_rect(self.x - 1 ,self.y - 1, self.w + 2, self.h + 2, 6, self.side_color)
+        scr.display.DrawText(self.text, self.x, self.y + 1, self.text_color)
 
-    def Update(self,text):
+    def Update(self,text:str, scr:Screen = gui):
         self.text = text
-        tft.fill_round_rect(self.x, self.y, self.w, self.h, 4, self.bg_color)
-        tft.fill_round_rect(self.x - 1 ,self.y - 1, self.w + 2, self.h + 2, 6, self.side_color)
-        tft.DrawText(self.text, self.x, self.y + 1, self.text_color)
+        scr.display.fill_round_rect(self.x, self.y, self.w, self.h, 4, self.bg_color)
+        scr.display.fill_round_rect(self.x - 1 ,self.y - 1, self.w + 2, self.h + 2, 6, self.side_color)
+        scr.display.DrawText(self.text, self.x, self.y + 1, self.text_color)
 
 class Switch(GUIObject):
-    def __init__(self, x, y, w, h, bg_color, offset = 17):
-        super().__init__(x, y, w, h, "", offset)
+    def __init__(self, x, y, w, h, bg_color, color, offset = 17):
+        super().__init__(x, y, w, h, "", gui, offset)
         self.bg_color = bg_color
+        self.color = color
         self.state = False
+        self.scr.RegisterChangeableObjects(self)
+        self.r = h // 2
+        r = self.r
+        side_space = h // 10 if (h // 10) else 1
+        self.circle_location_on = [x + w - r - 1,y + r,r - side_space]
+        self.circle_location_off = [x + r - 1,y + r,r - side_space]
+
 
     def GetSwitchStatus(self) -> bool:
         return self.state
 
-    def Draw(self) -> None:
+    def Draw(self,scr:Screen = gui) -> None:
         x = self.x
         y = self.y
         w = self.w
         h = self.h
-        r = tft.curved_side_rect(x, y, w, h, self.bg_color)
-        side_space = h // 10 if (h // 10) else 1
+        r = self.r
+        tft.curved_side_rect(x - (2 * r), y, w, h, self.bg_color if self.state else 0xaa7a)
+        draw_state = self.circle_location_on if self.state else self.circle_location_off
         if self.state:
-            tft.fill_circle(x + w - r, y + r, r - side_space, self.bg_color)
+            scr.display.fill_circle(draw_state[0], draw_state[1], draw_state[2], self.color)
         else:
-            tft.fill_circle(x + r, y + r, r - side_space, self.bg_color)
+            scr.display.fill_circle(draw_state[0], draw_state[1], draw_state[2], self.color)
 
-
-    def Logic(self) -> None:
-        if OptionConfirm:
+    def Logic(self,scr:Screen) -> None:
+        if scr.OptionConfirm() and scr.SelsetLabel == self:
             self.state = not self.state
-
-
-gui = Screen()
-
-# Example
-if __name__ == "__main__":
-    gui.SetBackGroundColor(0x0000)
-    label1 = Label(0,0,160,20,"Hello World",0x333F,0xFFFF)
-    gui.AddObject(label1)
-    gui.Update()
+            time.sleep(0.1)
