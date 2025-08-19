@@ -31,12 +31,6 @@ dc = Pin(TFT_DC_PIN,Pin.OUT)
 cs = Pin(TFT_CS_PIN,Pin.OUT)
 rst= Pin(TFT_RST_PIN,Pin.OUT)
     
-
-async def refresh_timer(t):#t (sec)
-    tft.show()
-    while True:
-        await asyncio.sleep(t)
-        tft.show()
 #=======GUI SETTINGS=====#
 OptionConfirm = None
 OptionChange = None
@@ -67,6 +61,10 @@ class GUIObject:
     def RemoveObject(self):
         try:
             self.scr.ObjectLayer.remove(self)
+            try:
+                self.scr.UnregisterChangeableObjects(self)
+            except:
+                pass
             self.Hidden = True
             self.Refresh = True
             asyncio.create_task(self.Draw(self.scr))
@@ -96,15 +94,15 @@ class Screen(ST7789):
     def __init__(self):
         super().__init__(SCR_WIDTH, SCR_HEIGHT, spi, dc, rst, cs)
         self.ObjectLayer = []
-        self.BackGroundColor = 0x0000
+        self.BackgroundColor = 0x0000
         self.display:ST7789 = super()
         self.ChangeableObjects = []
-        self.SelsetLabel:GUIObject = None
+        self.Focus:GUIObject = None
         self.SelsetIndex = 0
         self.OptionConfirm = OptionConfirm
         self.OptionChange = OptionChange
         self.OptionChangeActive = False
-        self.HighLightLocation = (0,0)
+        self.HighLightLoc = (0,0)
         self.HighLightAttr = (0,0)
         self.HighLightRefresh = True
 
@@ -119,31 +117,31 @@ class Screen(ST7789):
 
     def RegisterChangeableObjects(self,gui_obj:GUIObject) -> None:
         self.ChangeableObjects.append(gui_obj)
-        if self.SelsetLabel is None:
-            self.SelsetLabel = self.ChangeableObjects[0]
+        if self.Focus is None:
+            self.Focus = self.ChangeableObjects[0]
 
     def UnregisterChangeableObjects(self,gui_obj:GUIObject) -> None:
         try:
-            if self.SelsetLabel == gui_obj:
-                self.SelsetLabel = self.ChangeableObjects[0]
+            if self.Focus == gui_obj:
+                self.Focus = self.ChangeableObjects[0]
         except:
-            self.SelsetLabel = None
+            self.Focus = None
         self.ChangeableObjects.pop(self.ChangeableObjects.index(gui_obj))
 
     def SetBackgroundColor(self, color:int) -> None:
-        self.BackGroundColor = color
+        self.BackgroundColor = color
 
     def GUILogic(self) -> None:
         for i in self.ChangeableObjects:
             asyncio.create_task(i.Logic(self))
             if self.OptionChange() :
                 if not self.OptionChangeActive:
-                    Guiobj = self.SelsetLabel
-                    self.display.rect(Guiobj.x-2,Guiobj.y-2,Guiobj.w+4,Guiobj.h+4,self.BackGroundColor)
+                    GUIObj = self.Focus
+                    self.display.rect(GUIObj.x-2,GUIObj.y-2,GUIObj.w+4,GUIObj.h+4,self.BackgroundColor)
                     self.SelsetIndex += 1
                     if self.SelsetIndex >= len(self.ChangeableObjects):
                         self.SelsetIndex = 0
-                    self.SelsetLabel = self.ChangeableObjects[self.SelsetIndex]
+                    self.Focus = self.ChangeableObjects[self.SelsetIndex]
                 self.OptionChangeActive = True
                 self.HighLightRefresh = True
             else:
@@ -153,13 +151,13 @@ class Screen(ST7789):
         OL = self.ObjectLayer
         self.GUILogic()
         for i in range(len(OL) - 1, -1, -1):
-            Guiobj = OL[i]
-            if Guiobj.Refresh:
-                asyncio.create_task(Guiobj.Draw(self))
-            if Guiobj == self.SelsetLabel and self.HighLightRefresh:
-                self.display.rect(Guiobj.x-2,Guiobj.y-2,Guiobj.w+4,Guiobj.h+4,0x3333)
-                self.HighLightLocation = (Guiobj.x-2,Guiobj.y-2)
-                self.HighLightAttr = (Guiobj.w+4,Guiobj.h+4)
+            GUIObj = OL[i]
+            if GUIObj.Refresh:
+                asyncio.create_task(GUIObj.Draw(self))
+            if GUIObj == self.Focus and self.HighLightRefresh:
+                self.HighLightLoc = (GUIObj.x-2,GUIObj.y-2)
+                self.HighLightAttr = (GUIObj.w+4,GUIObj.h+4)
+                self.display.rect(self.HighLightLoc[0],self.HighLightLoc[1],self.HighLightAttr[0],self.HighLightAttr[1],0x3333)
                 self.HighLightRefresh = False
         self.display.show()
 
@@ -191,7 +189,7 @@ class Button(GUIObject):
         self.Refresh = False
 
     async def Logic(self, scr:Screen = gui):
-        if scr.OptionConfirm() and scr.SelsetLabel == self:
+        if scr.OptionConfirm() and scr.Focus == self:
             if not self.active:
                 self.trigger()
             self.active = True
@@ -267,14 +265,11 @@ class Switch(GUIObject):
         h = self.h
         scr.display.curved_side_rect(x, y, w, h, self.bg_color if self.state else 0xaa7a)
         draw_state = self.circle_location_on if self.state else self.circle_location_off
-        if self.state:
-            scr.display.fill_circle(draw_state[0], draw_state[1], draw_state[2], self.color)
-        else:
-            scr.display.fill_circle(draw_state[0], draw_state[1], draw_state[2], self.color)
+        scr.display.fill_circle(draw_state[0], draw_state[1], draw_state[2], self.color)
         self.Refresh = True
 
     async def Logic(self,scr:Screen) -> None:
-        if scr.OptionConfirm() and scr.SelsetLabel == self:
+        if scr.OptionConfirm() and scr.Focus == self:
             x = self.x
             y = self.y
             w = self.w
