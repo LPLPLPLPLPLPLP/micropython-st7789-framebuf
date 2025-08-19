@@ -50,8 +50,23 @@ class GUIObject:
         self.text = text
         self.scr = scr
         self.Refresh = True
+        self.Hidden = False
 
     async def SpecialDrawingRules(self,scr):pass
+
+    def RemoveObject(self):
+        try:
+            self.scr.ObjectLayer.remove(self)
+            self.Hidden = True
+            self.Refresh = True
+            asyncio.run(self.Draw(self.scr))
+            del self
+        except:
+            pass
+
+    def HideObject(self, mode:bool = True):
+        self.Hidden = mode
+        self.Refresh = True
 
     async def Draw(self, scr):
         x = self.x
@@ -60,6 +75,8 @@ class GUIObject:
         h = self.h
         tmp = framebuf.FrameBuffer(bytearray(w*h*2),w,h,framebuf.RGB565)
         scr.display.blit(tmp,x,y)
+        if self.Hidden:
+            return
         asyncio.run(self.SpecialDrawingRules(scr))
 
     def Logic(self):pass
@@ -103,7 +120,7 @@ class Screen(ST7789):
             self.SelsetLabel = None
         self.ChangeableObjects.pop(self.ChangeableObjects.index(gui_obj))
 
-    def SetBackGroundColor(self, color:int) -> None:
+    def SetBackgroundColor(self, color:int) -> None:
         self.BackGroundColor = color
 
     def GUILogic(self) -> None:
@@ -142,7 +159,8 @@ tft = gui.display
 # GUI LABEL CLASSES #
 
 class Button(GUIObject):
-    def __init__(self,x,y,w,h,text,bg_color,text_color,trigger):
+    def __init__(self, x:int, y:int, w:int, h:int, text:str,
+                 bg_color:int, text_color:int, trigger:function):
         super().__init__(x, y, w, h, text, gui)
         self.bg_color = bg_color
         self.text_color = text_color
@@ -151,7 +169,7 @@ class Button(GUIObject):
         self.scr.AddObject(self)
         self.active = False
 
-    async def SpecialDrawingRules(self,scr:Screen = gui):
+    async def SpecialDrawingRules(self, scr:Screen = gui):
         x = self.x
         y = self.y
         w = self.w
@@ -160,7 +178,7 @@ class Button(GUIObject):
         scr.display.DrawText(self.text, x + 1, y + 2, self.text_color)
         self.Refresh = False
 
-    async def Logic(self,scr:Screen = gui):
+    async def Logic(self, scr:Screen = gui):
         if scr.OptionConfirm() and scr.SelsetLabel == self:
             if not self.active:
                 self.trigger()
@@ -168,11 +186,9 @@ class Button(GUIObject):
         else:
             self.active = False
 
-
-
-
 class Label(GUIObject):
-    def __init__(self, x, y, w, h, text, bg_color, text_color, offset=17):
+    def __init__(self, x:int, y:int, w:int, h:int, text:str,
+                 bg_color:int, text_color:int, offset=17):
         super().__init__(x, y, w, h, text, gui, offset)
         self.scr.AddObject(self)
         self.bg_color = bg_color
@@ -184,7 +200,7 @@ class Label(GUIObject):
         scr.NeedRefresh = True
 
 
-    async def SpecialDrawingRules(self,scr:Screen = gui):
+    async def SpecialDrawingRules(self, scr:Screen = gui):
         x = self.x
         y = self.y
         w = self.w
