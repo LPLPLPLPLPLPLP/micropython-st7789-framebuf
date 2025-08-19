@@ -100,7 +100,7 @@ class ST7789(framebuf.FrameBuffer):
             if data:
                 self.write_data(data)
             time.sleep_ms(100)
-    def init_window(self, x0, y0, x1, y1):
+    def init_window(self, x0:int, y0:int, x1:int, y1:int) -> None:
         # 设置列地址范围 / SET COLUMN ADDRESS RANGE
         self.write_cmd(ST7789_CASET)
         self.write_data(bytearray([
@@ -115,13 +115,24 @@ class ST7789(framebuf.FrameBuffer):
             y1 >> 8, y1 & 0xFF
         ]))
 
-    def set_window(self):
+    def set_window(self) -> None:
         # 准备写入显示数据 / PREPARE TO WRITE DISPLAY DATA
         self.write_cmd(ST7789_RAMWR)
         
     def invert(self,mode:bool):
         self.write_cmd(ST7789_INVON if mode else ST7789_INVOFF)
     
+    def LocalRefresh(self, x0:int, y0:int, x1:int, y1:int, data:bytearray) -> None:
+        self.init_window(x0, y0, x1, y1)
+        self.set_window()
+        if self.cs:
+            self.cs(0)
+        self.dc(1)
+        self.spi.write(data)
+        if self.cs:
+            self.cs(1)
+        self.init_window(0, 0, self.width - 1, self.height - 1)
+
     def DrawText(self, text:str, x:int, y:int, color:int, offset = 17, wrap = False, w = None, buffer = None):
         orig_x = x + offset 
         curr_x = orig_x
@@ -163,7 +174,7 @@ class ST7789(framebuf.FrameBuffer):
     def curved_side_rect(self, x:int, y:int, w:int, h:int, color:int) -> int:
         r = h // 2
         self.fill_circle(x + r, y + r, r, color)
-        self.fill_rect(x + r, y, w - h, h, color)
+        self.fill_rect(x + r, y, w - h, h + 1, color)
         self.fill_circle(x + w - r, y + r, r, color)
         return r
     

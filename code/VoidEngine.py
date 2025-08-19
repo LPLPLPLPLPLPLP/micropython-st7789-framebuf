@@ -49,9 +49,18 @@ class GUIObject:
         self.h = h
         self.text = text
         self.scr = scr
+        self.Refresh = True
 
+    async def SpecialDrawingRules(self,scr):pass
 
-    def Draw(self):pass
+    async def Draw(self, scr):
+        x = self.x
+        y = self.y
+        w = self.w
+        h = self.h
+        tmp = framebuf.FrameBuffer(bytearray(w*h*2),w,h,framebuf.RGB565)
+        scr.display.blit(tmp,x,y)
+        asyncio.run(self.SpecialDrawingRules(scr))
 
     def Logic(self):pass
 
@@ -70,6 +79,7 @@ class Screen(ST7789):
         self.OptionChangeActive = False
         self.HighLightLocation = (0,0)
         self.HighLightAttr = (0,0)
+        self.HighLightRefresh = True
 
     
     def AddObject(self, obj:GUIObject):
@@ -98,28 +108,31 @@ class Screen(ST7789):
 
     def GUILogic(self) -> None:
         for i in self.ChangeableObjects:
-            i.Logic(self)
+            asyncio.run(i.Logic(self))
             if self.OptionChange() :
                 if not self.OptionChangeActive:
+                    Guiobj = self.SelsetLabel
+                    self.display.rect(Guiobj.x-2,Guiobj.y-2,Guiobj.w+4,Guiobj.h+4,self.BackGroundColor)
                     self.SelsetIndex += 1
                     if self.SelsetIndex >= len(self.ChangeableObjects):
                         self.SelsetIndex = 0
                     self.SelsetLabel = self.ChangeableObjects[self.SelsetIndex]
                 self.OptionChangeActive = True
+                self.HighLightRefresh = True
             else:
                 self.OptionChangeActive = False
 
     def Update(self) -> None:
         OL = self.ObjectLayer
-        self.display.fill(self.BackGroundColor)
         self.GUILogic()
         for i in range(len(OL) - 1, -1, -1):
             Guiobj = OL[i]
-            Guiobj.Draw()
-            if Guiobj == self.SelsetLabel:
-                self.display.rect(Guiobj.x - 2,Guiobj.y - 2,Guiobj.w + 4,Guiobj.h + 4,0x3333)
-                self.HighLightLocation = (Guiobj.x - 2,Guiobj.y - 2)
-                self.HighLightAttr = (Guiobj.w + 4,Guiobj.h + 4)
+            asyncio.run(Guiobj.Draw(self))
+            if Guiobj == self.SelsetLabel and self.HighLightRefresh:
+                self.display.rect(Guiobj.x-2,Guiobj.y-2,Guiobj.w+4,Guiobj.h+4,0x3333)
+                self.HighLightLocation = (Guiobj.x-2,Guiobj.y-2)
+                self.HighLightAttr = (Guiobj.w+4,Guiobj.h+4)
+                self.HighLightRefresh = False
         self.display.show()
 
 
@@ -138,15 +151,16 @@ class Button(GUIObject):
         self.scr.AddObject(self)
         self.active = False
 
-    def Draw(self,scr:Screen = gui):
+    async def SpecialDrawingRules(self,scr:Screen = gui):
         x = self.x
         y = self.y
         w = self.w
         h = self.h
         scr.display.fill_round_rect(x, y, w, h, 4, self.bg_color)
         scr.display.DrawText(self.text, x + 1, y + 2, self.text_color)
+        self.Refresh = False
 
-    def Logic(self,scr:Screen = gui):
+    async def Logic(self,scr:Screen = gui):
         if scr.OptionConfirm() and scr.SelsetLabel == self:
             if not self.active:
                 self.trigger()
@@ -166,13 +180,18 @@ class Label(GUIObject):
 
     def Update(self,text:str,scr:Screen = gui):
         self.text = text
-        scr.display.fill_rect(self.x, self.y, self.w, self.h, self.bg_color)
-        scr.display.DrawText(self.text, self.x, self.y + 1, self.text_color, w = self.w)
+        self.Refresh = True
+        scr.NeedRefresh = True
 
 
-    def Draw(self,scr:Screen = gui):
-        scr.display.fill_rect(self.x, self.y, self.w, self.h, self.bg_color)
-        scr.display.DrawText(self.text, self.x, self.y + 1, self.text_color, w = self.w)
+    async def SpecialDrawingRules(self,scr:Screen = gui):
+        x = self.x
+        y = self.y
+        w = self.w
+        h = self.h
+        scr.display.fill_rect(x, y, w, h, self.bg_color)
+        scr.display.DrawText(self.text, x, y + 1, self.text_color, w = w)
+        self.Refresh = False
 
 class TextArea(GUIObject):
     def __init__(self, x, y, w, h, text,
@@ -183,16 +202,20 @@ class TextArea(GUIObject):
         self.text_color = text_color
         self.side_color = side_color
 
-    def Draw(self,scr:Screen = gui):
-        scr.display.fill_round_rect(self.x, self.y, self.w, self.h, 4, self.bg_color)
-        scr.display.fill_round_rect(self.x - 1 ,self.y - 1, self.w + 2, self.h + 2, 6, self.side_color)
-        scr.display.DrawText(self.text, self.x, self.y + 1, self.text_color)
+    async def SpecialDrawingRules(self,scr:Screen = gui):
+        x = self.x
+        y = self.y
+        w = self.w
+        h = self.h
+        scr.display.fill_round_rect(x, y, w, h, 4, self.bg_color)
+        scr.display.fill_round_rect(x-2 ,y-2, w+4, h+4, 6, self.side_color)
+        scr.display.DrawText(self.text, x, y + 1, self.text_color)
+        self.Refresh = False
 
     def Update(self,text:str, scr:Screen = gui):
         self.text = text
-        scr.display.fill_round_rect(self.x, self.y, self.w, self.h, 4, self.bg_color)
-        scr.display.fill_round_rect(self.x - 1 ,self.y - 1, self.w + 2, self.h + 2, 6, self.side_color)
-        scr.display.DrawText(self.text, self.x, self.y + 1, self.text_color)
+        self.Refresh = True
+        scr.NeedRefresh = True
 
 class Switch(GUIObject):
     def __init__(self, x, y, w, h, bg_color, color, offset = 17):
@@ -211,26 +234,25 @@ class Switch(GUIObject):
     def GetSwitchStatus(self) -> bool:
         return self.state
 
-    def Draw(self,scr:Screen = gui) -> None:
+    async def SpecialDrawingRules(self,scr:Screen = gui) -> None:
         x = self.x
         y = self.y
         w = self.w
         h = self.h
-        r = self.r
         scr.display.curved_side_rect(x, y, w, h, self.bg_color if self.state else 0xaa7a)
         draw_state = self.circle_location_on if self.state else self.circle_location_off
         if self.state:
             scr.display.fill_circle(draw_state[0], draw_state[1], draw_state[2], self.color)
         else:
             scr.display.fill_circle(draw_state[0], draw_state[1], draw_state[2], self.color)
+        self.Refresh = True
 
-    def Logic(self,scr:Screen) -> None:
+    async def Logic(self,scr:Screen) -> None:
         if scr.OptionConfirm() and scr.SelsetLabel == self:
             x = self.x
             y = self.y
             w = self.w
             h = self.h
-            r = self.r
             now_c = self.color if self.state else self.bg_color
             now_x = self.circle_location_on[0] if self.state else self.circle_location_off[0]
             self.state = not self.state
@@ -254,3 +276,5 @@ class Switch(GUIObject):
                 now_c = (now_c_B + now_c_G + now_c_R)
                 now_x += (tg_x - now_x) // 2
                 scr.display.show()
+            self.Refresh = False
+            scr.NeedRefresh = True
