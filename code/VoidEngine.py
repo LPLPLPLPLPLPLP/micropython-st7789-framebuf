@@ -54,12 +54,22 @@ class GUIObject:
 
     async def SpecialDrawingRules(self,scr):pass
 
+    def SetLocation(self, x:int, y:int) -> None:
+        self.x = x
+        self.y = y
+        self.Refresh = True
+    
+    def SetSize(self, w:int, h:int) -> None:
+        self.w = w
+        self.h = h
+        self.Refresh = True
+
     def RemoveObject(self):
         try:
             self.scr.ObjectLayer.remove(self)
             self.Hidden = True
             self.Refresh = True
-            asyncio.run(self.Draw(self.scr))
+            asyncio.create_task(self.Draw(self.scr))
             del self
         except:
             pass
@@ -77,7 +87,7 @@ class GUIObject:
         scr.display.blit(tmp,x,y)
         if self.Hidden:
             return
-        asyncio.run(self.SpecialDrawingRules(scr))
+        asyncio.create_task(self.SpecialDrawingRules(scr))
 
     def Logic(self):pass
 
@@ -125,7 +135,7 @@ class Screen(ST7789):
 
     def GUILogic(self) -> None:
         for i in self.ChangeableObjects:
-            asyncio.run(i.Logic(self))
+            asyncio.create_task(i.Logic(self))
             if self.OptionChange() :
                 if not self.OptionChangeActive:
                     Guiobj = self.SelsetLabel
@@ -144,7 +154,8 @@ class Screen(ST7789):
         self.GUILogic()
         for i in range(len(OL) - 1, -1, -1):
             Guiobj = OL[i]
-            asyncio.run(Guiobj.Draw(self))
+            if Guiobj.Refresh:
+                asyncio.create_task(Guiobj.Draw(self))
             if Guiobj == self.SelsetLabel and self.HighLightRefresh:
                 self.display.rect(Guiobj.x-2,Guiobj.y-2,Guiobj.w+4,Guiobj.h+4,0x3333)
                 self.HighLightLocation = (Guiobj.x-2,Guiobj.y-2)
@@ -159,9 +170,10 @@ tft = gui.display
 # GUI LABEL CLASSES #
 
 class Button(GUIObject):
-    def __init__(self, x:int, y:int, w:int, h:int, text:str,
+    def __init__(self, x:int, y:int, text:str,
                  bg_color:int, text_color:int, trigger:function):
-        super().__init__(x, y, w, h, text, gui)
+        
+        super().__init__(x, y, gui.display.GetTextWidth(text)+4, 20, text, gui)
         self.bg_color = bg_color
         self.text_color = text_color
         self.trigger = trigger
@@ -187,18 +199,16 @@ class Button(GUIObject):
             self.active = False
 
 class Label(GUIObject):
-    def __init__(self, x:int, y:int, w:int, h:int, text:str,
+    def __init__(self, x:int, y:int, text:str,
                  bg_color:int, text_color:int, offset=17):
-        super().__init__(x, y, w, h, text, gui, offset)
+        super().__init__(x, y, gui.display.GetTextWidth(text), 20, text, gui, offset)
         self.scr.AddObject(self)
         self.bg_color = bg_color
         self.text_color = text_color
 
-    def Update(self,text:str,scr:Screen = gui):
+    def Update(self,text:str):
         self.text = text
         self.Refresh = True
-        scr.NeedRefresh = True
-
 
     async def SpecialDrawingRules(self, scr:Screen = gui):
         x = self.x
@@ -234,7 +244,7 @@ class TextArea(GUIObject):
         scr.NeedRefresh = True
 
 class Switch(GUIObject):
-    def __init__(self, x, y, w, h, bg_color, color, offset = 17):
+    def __init__(self, x:int, y:int, w:int, h:int, bg_color:int, color:int, offset = 17):
         super().__init__(x, y, w, h, "", gui, offset)
         self.bg_color = bg_color
         self.color = color
@@ -283,14 +293,10 @@ class Switch(GUIObject):
             for _ in range(8):
                 scr.display.curved_side_rect(x, y, w, h, now_c)
                 scr.display.fill_circle(now_x, draw_state[1], draw_state[2], self.color)
-                now_c_B = (now_c//256)*256
-                now_c_G = (now_c - now_c_B)//16 * 16
-                now_c_R = (now_c - now_c_B - now_c_G)
-                now_c_B = (now_c_B + (tg_c[0] - now_c_B)) // 2
-                now_c_G = (now_c_G + (tg_c[1] - now_c_G)) // 2
-                now_c_R = (now_c_R + (tg_c[2] - now_c_R)) // 2
+                now_c_B += (tg_c[0] - ((now_c//256)*256)) // 2
+                now_c_G += (tg_c[1] - ((now_c - now_c_B)//16 * 16)) // 2
+                now_c_R += (tg_c[2] - ((now_c - now_c_B - now_c_G))) // 2
                 now_c = (now_c_B + now_c_G + now_c_R)
                 now_x += (tg_x - now_x) // 2
                 scr.display.show()
             self.Refresh = False
-            scr.NeedRefresh = True

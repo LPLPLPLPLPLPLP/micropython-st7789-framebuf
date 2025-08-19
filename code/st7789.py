@@ -133,6 +133,17 @@ class ST7789(framebuf.FrameBuffer):
             self.cs(1)
         self.init_window(0, 0, self.width - 1, self.height - 1)
 
+    def GetTextWidth(self, text:str) -> int:
+        total_width = 0
+        for char in text:
+            if char == " ":
+                total_width += 12
+                continue
+            width = font_20.get_ch(char)[2]
+            total_width += width
+        return total_width
+
+
     def DrawText(self, text:str, x:int, y:int, color:int, offset = 17, wrap = False, w = None, buffer = None):
         orig_x = x + offset 
         curr_x = orig_x
