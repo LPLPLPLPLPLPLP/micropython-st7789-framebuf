@@ -30,8 +30,14 @@ MADCTL_MX  = const(0b01000000)  # 列地址顺序 / COLUMN ADDRESS ORDER
 MADCTL_MV  = const(0b00100000)  # 行列交换   / SWAP ROW/COLUMN
 MADCTL_ML  = const(0b00010000)  # 左右交换   / SWAP LEFT/RIGHT
 MADCTL_MODE = MADCTL_MY | MADCTL_MV | 0b00001010
+
+class Font:
+    def __init__(self, SourceFontFile:str):
+        exec(f"import {SourceFontFile} as font")
+        self.ft_class = font
+        
 class ST7789(framebuf.FrameBuffer):
-    def __init__(self, width, height, spi, dc, rst, cs=None):
+    def __init__(self, width, height, spi, dc, rst, cs=None, font=None):
         self.width = width
         self.height = height
         self.spi = spi
@@ -64,6 +70,8 @@ class ST7789(framebuf.FrameBuffer):
         # 清屏并显示
         self.fill(0)
         self.show()
+        if font:
+            self.font = Font(font).ft_class
 
     def reset(self):
         self.rst(0)
@@ -139,12 +147,13 @@ class ST7789(framebuf.FrameBuffer):
             if char == " ":
                 total_width += 12
                 continue
-            width = font_20.get_ch(char)[2]
+            width = self.font.get_ch(char)[2]
             total_width += width
         return total_width
 
 
-    def DrawText(self, text:str, x:int, y:int, color:int, offset = 17, wrap = False, w = None, buffer = None):
+    def DrawText(self, text:str, x:int, y:int, color:int,
+                 offset = 17, wrap = False, w = None, buffer = None):
         orig_x = x + offset 
         curr_x = orig_x
         curr_y = y
@@ -152,7 +161,7 @@ class ST7789(framebuf.FrameBuffer):
             fbuf = super()
         else:
             fbuf = buffer
-        get_ch = font_20.get_ch
+        get_ch = self.font.get_ch
         memviews = b''
         total_width = 0
         for char in text:
