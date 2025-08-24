@@ -141,19 +141,23 @@ class ST7789(framebuf.FrameBuffer):
             self.cs(1)
         self.init_window(0, 0, self.width - 1, self.height - 1)
 
-    def GetTextWidth(self, text:str) -> int:
+    def GetTextWidth(self, text:str, font:Font=None) -> int:
         total_width = 0
         for char in text:
             if char == " ":
                 total_width += 12
                 continue
-            width = self.font.get_ch(char)[2]
+            if font:
+                width = font.get_ch(char)[2]
+            else:
+                width = self.font.get_ch(char)[2]
             total_width += width
         return total_width
 
 
     def DrawText(self, text:str, x:int, y:int, color:int,
-                 offset = 17, wrap = False, w = None, buffer = None):
+                 offset = 17, wrap:bool = False, w:int = None,
+                 buffer:bytearray = None, font:Font=None):
         orig_x = x + offset 
         curr_x = orig_x
         curr_y = y
@@ -161,16 +165,23 @@ class ST7789(framebuf.FrameBuffer):
             fbuf = super()
         else:
             fbuf = buffer
-        get_ch = self.font.get_ch
+        if font:
+            get_ch = font.get_ch
+        else:
+            get_ch = self.font.get_ch
+
+        font_height = font.height() if font else self.font.height()
+        font_width = font.max_width() if font else self.font.max_width()
+
         memviews = b''
         total_width = 0
         for char in text:
             if char == " ":
-                curr_x += 12
+                curr_x += font_width
                 continue
             elif char == '\n' and wrap:
                 curr_x = orig_x
-                curr_y += 20
+                curr_y += font_height
                 continue
             mv, height, width = get_ch(char)
             memviews += mv
