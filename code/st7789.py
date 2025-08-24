@@ -33,7 +33,8 @@ MADCTL_MODE = MADCTL_MY | MADCTL_MV | 0b00001010
 
 class Font:
     def __init__(self, SourceFontFile:str):
-        exec(f"import {SourceFontFile} as font")
+        self.SourceFontLib = SourceFontFile.replace(".py","")
+        exec(f"import {self.SourceFontLib} as font")
         self.ft_class = font
         
 class ST7789(framebuf.FrameBuffer):
