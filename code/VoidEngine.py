@@ -30,7 +30,25 @@ miso=Pin(TFT_MISO_PIN))
 dc = Pin(TFT_DC_PIN,Pin.OUT)
 cs = Pin(TFT_CS_PIN,Pin.OUT)
 rst= Pin(TFT_RST_PIN,Pin.OUT)
+#============FUNCTIONS============#
+def Thumbnail(SourceFrame:framebuf.FrameBuffer, TargetWidth:int, TargetHeight:int) -> framebuf.FrameBuffer:
+    src_width = SourceFrame.width
+    src_height = SourceFrame.height
     
+    buffer = bytearray(TargetWidth * TargetHeight * 2)
+    target_fb = framebuf.FrameBuffer(buffer, TargetWidth, TargetHeight, framebuf.RGB565)
+    
+    scale_x = src_width / TargetWidth
+    scale_y = src_height / TargetHeight
+    
+    for y in range(TargetHeight):
+        src_y = int(y * scale_y)
+        for x in range(TargetWidth):
+            src_x = int(x * scale_x)
+            color = SourceFrame.pixel(src_x, src_y)
+            target_fb.pixel(x, y, color)
+    
+    return target_fb
 #=======GUI SETTINGS=====#
 OptionConfirm = None
 OptionChange = None
