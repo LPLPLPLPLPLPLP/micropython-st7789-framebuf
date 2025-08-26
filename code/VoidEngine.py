@@ -35,6 +35,9 @@ def Thumbnail(SourceFrame:framebuf.FrameBuffer, TargetWidth:int, TargetHeight:in
     src_width = SourceFrame.width
     src_height = SourceFrame.height
     
+    if src_width < TargetWidth or src_height < TargetHeight:
+        raise ValueError("TargetWidth or TargetHeight is larger than SourceFrame")
+
     buffer = bytearray(TargetWidth * TargetHeight * 2)
     target_fb = framebuf.FrameBuffer(buffer, TargetWidth, TargetHeight, framebuf.RGB565)
     
