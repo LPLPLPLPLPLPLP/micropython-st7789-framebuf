@@ -260,7 +260,6 @@ class TextArea(GUIObject):
     def Update(self,text:str, scr:Screen = gui):
         self.text = text
         self.Refresh = True
-        scr.NeedRefresh = True
 
 class Switch(GUIObject):
     def __init__(self, x:int, y:int, w:int, h:int, bg_color:int, color:int, offset = 17):
