@@ -6,6 +6,7 @@ from micropython import const
 import SourceHanSans as font_20
 import framebuf
 import time
+import asyncio
 # ST7789命令定义 / ST7789 COMMAND DEFINITION
 ST7789_NOP = 0x00
 ST7789_SWRESET = 0x01
@@ -71,6 +72,8 @@ class ST7789(framebuf.FrameBuffer):
         # 清屏并显示
         self.fill(0)
         self.show()
+        self.fps = 0
+        self.fpsc = False
         if font:
             self.font = Font(font).ft_class
 
@@ -155,6 +158,24 @@ class ST7789(framebuf.FrameBuffer):
             total_width += width
         return total_width
 
+    async def FPSCounter(self) -> None:
+        while True:
+            if not self.fpsc:
+                return
+            await asyncio.sleep(1)
+            self.fbuf.text(f"FPS: {self.fps}", 0, 0, 0xFFFF)
+            self.show()
+            self.fps = 0    
+
+    def FramePerSecondInfo(self, mode:bool = True) -> None:
+        self.fpsc = mode
+        if mode:
+            loop = asyncio.get_event_loop()
+            loop.create_task(self.FPSCounter())
+            self.fps = 0
+        else:
+            self.fps = 0
+            self.fpsc = False
 
     def DrawText(self, text:str, x:int, y:int, color:int,
                  offset = 17, wrap:bool = False, w:int = None,
@@ -233,3 +254,5 @@ class ST7789(framebuf.FrameBuffer):
         self.spi.write(self.buffer)
         if self.cs:
             self.cs(1)
+        if self.fpsc:
+            self.fps += 1

@@ -257,7 +257,7 @@ class TextArea(GUIObject):
         scr.display.DrawText(self.text, x, y + 1, self.text_color)
         self.Refresh = False
 
-    def Update(self,text:str, scr:Screen = gui):
+    def Update(self,text:str):
         self.text = text
         self.Refresh = True
 
