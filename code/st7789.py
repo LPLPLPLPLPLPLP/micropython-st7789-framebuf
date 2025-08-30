@@ -31,12 +31,6 @@ MADCTL_MX  = const(0b01000000)  # 列地址顺序 / COLUMN ADDRESS ORDER
 MADCTL_MV  = const(0b00100000)  # 行列交换   / SWAP ROW/COLUMN
 MADCTL_ML  = const(0b00010000)  # 左右交换   / SWAP LEFT/RIGHT
 MADCTL_MODE = MADCTL_MY | MADCTL_MV | 0b00001010
-
-class Font:
-    def __init__(self, SourceFontFile:str):
-        self.SourceFontLib = SourceFontFile.replace(".py","")
-        exec(f"import {self.SourceFontLib} as font")
-        self.ft_class = font
         
 class ST7789(framebuf.FrameBuffer):
     def __init__(self, width, height, spi, dc, rst, cs=None, font=None):
@@ -46,6 +40,8 @@ class ST7789(framebuf.FrameBuffer):
         self.dc = dc
         self.rst = rst
         self.cs = cs
+        self.fps = 0
+        self.fpsc = False
         # INIT CONTROL PINS
         # 初始化控制引脚
         dc.init(dc.OUT, value=0)
@@ -72,10 +68,6 @@ class ST7789(framebuf.FrameBuffer):
         # 清屏并显示
         self.fill(0)
         self.show()
-        self.fps = 0
-        self.fpsc = False
-        if font:
-            self.font = Font(font).ft_class
 
     def reset(self):
         self.rst(0)
@@ -145,16 +137,13 @@ class ST7789(framebuf.FrameBuffer):
             self.cs(1)
         self.init_window(0, 0, self.width - 1, self.height - 1)
 
-    def GetTextWidth(self, text:str, font:Font=None) -> int:
+    def GetTextWidth(self, text:str) -> int:
         total_width = 0
         for char in text:
             if char == " ":
                 total_width += 12
                 continue
-            if font:
-                width = font.get_ch(char)[2]
-            else:
-                width = self.font.get_ch(char)[2]
+            width = font_20.get_ch(char)[2]
             total_width += width
         return total_width
 
@@ -179,7 +168,7 @@ class ST7789(framebuf.FrameBuffer):
 
     def DrawText(self, text:str, x:int, y:int, color:int,
                  offset = 17, wrap:bool = False, w:int = None,
-                 buffer:bytearray = None, font:Font=None):
+                 buffer:bytearray = None):
         orig_x = x + offset 
         curr_x = orig_x
         curr_y = y
@@ -187,13 +176,11 @@ class ST7789(framebuf.FrameBuffer):
             fbuf = super()
         else:
             fbuf = buffer
-        if font:
-            get_ch = font.get_ch
-        else:
-            get_ch = self.font.get_ch
+        
+        get_ch = font_20.get_ch
 
-        font_height = font.height() if font else self.font.height()
-        font_width = font.max_width() if font else self.font.max_width()
+        font_height = font_20.height()
+        font_width = font_20.max_width()
 
         memviews = b''
         total_width = 0
