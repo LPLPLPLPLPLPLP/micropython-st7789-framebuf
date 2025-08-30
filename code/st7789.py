@@ -57,7 +57,7 @@ class ST7789(framebuf.FrameBuffer):
         self.buffer = bytearray(self.width * self.height * 2)
         # INIT FRAMEBUF
         # 初始化FrameBuffer (RGB565格式)
-        self.fbuf = super().__init__(self.buffer, self.width, self.height, framebuf.RGB565)
+        super().__init__(self.buffer, self.width, self.height, framebuf.RGB565)
         # OPEN BACKLIGHT
         # 开启背光
         self.bl = Pin(45, Pin.OUT)  # 根据实际连接修改引脚
@@ -152,22 +152,22 @@ class ST7789(framebuf.FrameBuffer):
             if not self.fpsc:
                 return
             await asyncio.sleep(1)
-            self.fbuf.text(f"FPS: {self.fps}", 0, 0, 0xFFFF)
+            print(self.fps)
+            self.text(f"FPS: {self.fps}", 17, 0, 0xFFFF)
             self.show()
             self.fps = 0    
 
     def FramePerSecondInfo(self, mode:bool = True) -> None:
         self.fpsc = mode
         if mode:
-            loop = asyncio.get_event_loop()
-            loop.create_task(self.FPSCounter())
+            asyncio.run(self.FPSCounter())
             self.fps = 0
         else:
             self.fps = 0
             self.fpsc = False
 
     def DrawText(self, text:str, x:int, y:int, color:int,
-                 offset = 17, wrap:bool = False, w:int = None,
+                 offset = 0, wrap:bool = False, w:int = None,
                  buffer:bytearray = None):
         orig_x = x + offset 
         curr_x = orig_x
