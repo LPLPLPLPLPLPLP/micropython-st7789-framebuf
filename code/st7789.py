@@ -147,24 +147,14 @@ class ST7789(framebuf.FrameBuffer):
             total_width += width
         return total_width
 
-    async def FPSCounter(self) -> None:
+    async def FramePerSecondInfo(self, mode:bool = True) -> None:
+        self.fpsc = mode
         while True:
             if not self.fpsc:
                 return
             await asyncio.sleep(1)
             print(self.fps)
-            self.text(f"FPS: {self.fps}", 17, 0, 0xFFFF)
-            self.show()
             self.fps = 0    
-
-    def FramePerSecondInfo(self, mode:bool = True) -> None:
-        self.fpsc = mode
-        if mode:
-            asyncio.run(self.FPSCounter())
-            self.fps = 0
-        else:
-            self.fps = 0
-            self.fpsc = False
 
     def DrawText(self, text:str, x:int, y:int, color:int,
                  offset = 0, wrap:bool = False, w:int = None,

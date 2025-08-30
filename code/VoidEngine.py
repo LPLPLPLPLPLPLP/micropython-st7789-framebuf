@@ -161,9 +161,11 @@ class Screen(ST7789):
                 self.HighLightAttr = (GUIObj.w+4,GUIObj.h+4)
                 self.display.rect(self.HighLightLoc[0],self.HighLightLoc[1],self.HighLightAttr[0],self.HighLightAttr[1],0x3333)
                 self.HighLightRefresh = False
+        self.display.show()
         # GUI LOGIC
         for i in self.ChangeableObjects:
-            asyncio.create_task(i.Logic(self))
+            Logic_task = asyncio.create_task(i.Logic(self))
+            await Logic_task
         if self.OptionChange():
             if not self.OptionChangeActive:
                 GUIObj = self.Focus
