@@ -150,7 +150,7 @@ class Screen(ST7789):
     def SetBackgroundColor(self, color:int) -> None:
         self.BackgroundColor = color
 
-    async def _async_update(self):
+    async def _async_update_label(self):
         OL = self.ObjectLayer
         for i in range(len(OL) - 1, -1, -1):
             GUIObj = OL[i]
@@ -162,10 +162,11 @@ class Screen(ST7789):
                 self.display.rect(self.HighLightLoc[0],self.HighLightLoc[1],self.HighLightAttr[0],self.HighLightAttr[1],0x3333)
                 self.HighLightRefresh = False
         self.display.show()
-        # GUI LOGIC
+
+    async def _async_label_logic(self):
         for i in self.ChangeableObjects:
-            Logic_task = asyncio.create_task(i.Logic(self))
-            await Logic_task
+            logic_task = asyncio.create_task(i.Logic(self))
+            await logic_task
         if self.OptionChange():
             if not self.OptionChangeActive:
                 GUIObj = self.Focus
@@ -180,8 +181,15 @@ class Screen(ST7789):
             self.OptionChangeActive = False
         self.display.show()
 
-    def Update(self) -> None:
-        asyncio.run(self._async_update())
+
+    async def _async_update_main(self):
+        task_update_label = asyncio.create_task(self._async_update_label())
+        task_label_logic = asyncio.create_task(self._async_label_logic())
+        await task_update_label
+        await task_label_logic
+
+    def update(self) -> None:
+        asyncio.run(self._async_update_main())
 
 
 gui = Screen()
@@ -220,7 +228,7 @@ class Button(GUIObject):
 
 class Label(GUIObject):
     def __init__(self, x:int, y:int, text:str,
-                 bg_color:int, text_color:int, offset=17):
+                 bg_color:int, text_color:int, offset=0):
         super().__init__(x, y, gui.display.GetTextWidth(text) + (2*len(text)), 20, text, gui, offset)
         self.scr.AddObject(self)
         self.bg_color = bg_color
@@ -243,7 +251,7 @@ class Label(GUIObject):
 
 class TextArea(GUIObject):
     def __init__(self, x, y, w, h, text,
-                bg_color, text_color, side_color, offset = 17):
+                bg_color, text_color, side_color, offset = 0):
         super().__init__(x, y, w, h, gui, text, offset)
         self.scr.AddObject(self)
         self.bg_color = bg_color
@@ -265,7 +273,7 @@ class TextArea(GUIObject):
         self.Refresh = True
 
 class Switch(GUIObject):
-    def __init__(self, x:int, y:int, w:int, h:int, bg_color:int, color:int, offset = 17):
+    def __init__(self, x:int, y:int, w:int, h:int, bg_color:int, color:int, offset = 0):
         super().__init__(x, y, w, h, "", gui, offset)
         self.bg_color = bg_color
         self.color = color

@@ -126,17 +126,6 @@ class ST7789(framebuf.FrameBuffer):
     def invert(self,mode:bool):
         self.write_cmd(ST7789_INVON if mode else ST7789_INVOFF)
     
-    def LocalRefresh(self, x0:int, y0:int, x1:int, y1:int, data:bytearray) -> None:
-        self.init_window(x0, y0, x1, y1)
-        self.set_window()
-        if self.cs:
-            self.cs(0)
-        self.dc(1)
-        self.spi.write(data)
-        if self.cs:
-            self.cs(1)
-        self.init_window(0, 0, self.width - 1, self.height - 1)
-
     def GetTextWidth(self, text:str) -> int:
         total_width = 0
         for char in text:
@@ -147,14 +136,17 @@ class ST7789(framebuf.FrameBuffer):
             total_width += width
         return total_width
 
-    async def FramePerSecondInfo(self, mode:bool = True) -> None:
-        self.fpsc = mode
-        while True:
-            if not self.fpsc:
-                return
+    async def FPSCounter(self) -> None:
+        while self.fpsc:
             await asyncio.sleep(1)
             print(self.fps)
-            self.fps = 0    
+            self.fps = 0
+
+    async def FramePerSecondInfo(self, mode:bool = True) -> None:
+        self.fpsc = mode
+        if mode:
+            task = asyncio.create_task(self.FPSCounter())
+            await task
 
     def DrawText(self, text:str, x:int, y:int, color:int,
                  offset = 0, wrap:bool = False, w:int = None,
@@ -183,29 +175,27 @@ class ST7789(framebuf.FrameBuffer):
                 curr_y += font_height
                 continue
             mv, height, width = get_ch(char)
+            original_width = width
             width += int(height * slope)
             memviews += mv
-            row_bytes = (width + 7) // 8
+            row_bytes = (original_width + 7) // 8
 
-            pixel_offset = int(height * slope) - 1
+            pixel_offset = int(height * slope) - 1 if slope > 0.0 else 0
             idk_how_to_describe_this_var:float = 0.0 # The name of this var is just a joke,but it just a internal variable, nobody cares lol.
 
             for ny in range(height):
                 row_start = ny * row_bytes
-                for nx in range(width):
-                    idk_how_to_describe_this_var += slope
+                idk_how_to_describe_this_var += slope
+                for nx in range(original_width):
                     byte_idx = row_start + (nx // 8)
                     bit_mask = 1 << (7 - (nx % 8))
                     if mv[byte_idx] & bit_mask:
-                        if idk_how_to_describe_this_var >= 1.0:
-                            fbuf.pixel(curr_x + nx + pixel_offset, curr_y + ny, color)
-                            idk_how_to_describe_this_var = 0.0
-                        else:
-                            fbuf.pixel(curr_x + nx, curr_y + ny, color)
-                        
-                        pixel_offset = pixel_offset - int(slope)
-            curr_x += width
-            total_width += width
+                        fbuf.pixel(curr_x + nx + pixel_offset, curr_y + ny, color)
+                if idk_how_to_describe_this_var >= 1.0:
+                    pixel_offset -= int(idk_how_to_describe_this_var)
+                    idk_how_to_describe_this_var = 0.0
+            curr_x += original_width + int(slope)
+            total_width += original_width + int(slope)
             if w is not None and total_width + 20 > w:
                 return memviews,total_width,20
             if wrap and curr_x >= 300:
