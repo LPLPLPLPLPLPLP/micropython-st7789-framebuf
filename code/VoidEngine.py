@@ -6,7 +6,6 @@ from machine import SPI,Pin
 import framebuf
 from micropython import const
 import asyncio
-import time
 #======CHANGE THESE SETTINGS========#
 TFT_RST_PIN = const(0)  # Pin RST
 TFT_LED_PIN = const(12) 

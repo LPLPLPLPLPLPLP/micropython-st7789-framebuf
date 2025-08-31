@@ -198,7 +198,7 @@ class ST7789(framebuf.FrameBuffer):
             total_width += original_width + int(slope)
             if w is not None and total_width + 20 > w:
                 return memviews,total_width,20
-            if wrap and curr_x >= 300:
+            if wrap and curr_x >= self.width - 20:
                 curr_x = orig_x
                 curr_y += 20
         return memviews,total_width,20
