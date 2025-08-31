@@ -199,9 +199,10 @@ class ST7789(framebuf.FrameBuffer):
                     if mv[byte_idx] & bit_mask:
                         if idk_how_to_describe_this_var >= 1.0:
                             fbuf.pixel(curr_x + nx + pixel_offset, curr_y + ny, color)
+                            idk_how_to_describe_this_var = 0.0
                         else:
                             fbuf.pixel(curr_x + nx, curr_y + ny, color)
-                        idk_how_to_describe_this_var = 0.0
+                        
                         pixel_offset = pixel_offset - int(slope)
             curr_x += width
             total_width += width
