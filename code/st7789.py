@@ -158,7 +158,7 @@ class ST7789(framebuf.FrameBuffer):
 
     def DrawText(self, text:str, x:int, y:int, color:int,
                  offset = 0, wrap:bool = False, w:int = None,
-                 buffer:bytearray = None):
+                 buffer:bytearray = None, slope:float = 0.0):
         orig_x = x + offset 
         curr_x = orig_x
         curr_y = y
@@ -183,15 +183,26 @@ class ST7789(framebuf.FrameBuffer):
                 curr_y += font_height
                 continue
             mv, height, width = get_ch(char)
+            width += int(height * slope)
             memviews += mv
             row_bytes = (width + 7) // 8
+
+            pixel_offset = int(height * slope) - 1
+            idk_how_to_describe_this_var:float = 0.0 # The name of this var is just a joke,but it just a internal variable, nobody cares lol.
+
             for ny in range(height):
                 row_start = ny * row_bytes
                 for nx in range(width):
+                    idk_how_to_describe_this_var += slope
                     byte_idx = row_start + (nx // 8)
                     bit_mask = 1 << (7 - (nx % 8))
                     if mv[byte_idx] & bit_mask:
-                        fbuf.pixel(curr_x + nx, curr_y + ny, color)
+                        if idk_how_to_describe_this_var >= 1.0:
+                            fbuf.pixel(curr_x + nx + pixel_offset, curr_y + ny, color)
+                        else:
+                            fbuf.pixel(curr_x + nx, curr_y + ny, color)
+                        idk_how_to_describe_this_var = 0.0
+                        pixel_offset = pixel_offset - int(slope)
             curr_x += width
             total_width += width
             if w is not None and total_width + 20 > w:
