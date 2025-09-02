@@ -123,6 +123,7 @@ class Screen(ST7789):
         self.HighLightLoc = (0,0)
         self.HighLightAttr = (0,0)
         self.HighLightRefresh = True
+        self.AutoUpdateLoop = None
 
     
     def AddObject(self, obj:GUIObject):
@@ -180,15 +181,25 @@ class Screen(ST7789):
             self.OptionChangeActive = False
         self.display.show()
 
-
     async def _async_update_main(self):
         task_update_label = asyncio.create_task(self._async_update_label())
         task_label_logic = asyncio.create_task(self._async_label_logic())
         await task_update_label
         await task_label_logic
 
-    def update(self) -> None:
+    async def _async_auto_update(self):
+        while True:
+            await self._async_update_main()
+
+    def update(self, Auto:bool = False) -> None:
         asyncio.run(self._async_update_main())
+        if Auto:
+            if self.AutoUpdateLoop is None:
+                self.AutoUpdateLoop = asyncio.get_event_loop()
+            self.AutoUpdateLoop.create_task(self._async_auto_update())
+            self.AutoUpdateLoop.run_forever()
+        else:
+            self.AutoUpdateLoop.close()
 
 
 gui = Screen()
