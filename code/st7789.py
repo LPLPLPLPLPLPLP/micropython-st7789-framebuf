@@ -42,6 +42,9 @@ class ST7789(framebuf.FrameBuffer):
         self.cs = cs
         self.fps = 0
         self.fpsc = False
+
+        self.dpr_buffer_hash = 0
+
         # INIT CONTROL PINS
         # 初始化控制引脚
         dc.init(dc.OUT, value=0)
@@ -222,9 +225,18 @@ class ST7789(framebuf.FrameBuffer):
 
     def show(self):
         self.set_window()
+
+        if self.dpr_buffer_hash != bytes(self.buffer).__hash__():
+            self.dpr_buffer_hash = bytes(self.buffer).__hash__()
+        else:
+            if self.fpsc:
+                self.fps += 1
+            return
+
         if self.cs:
             self.cs(0)
         self.dc(1)
+        
         # 填充未使用缓冲区(可选)
         # FILL UNUSED BUFFER (OPTIONAL).IF YOU FOUND THAT THE DISPLAY IS NOT WORKING PROPERLY, YOU CAN TRY THIS.
         for _ in range(70):

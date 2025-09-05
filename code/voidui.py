@@ -56,7 +56,7 @@ OptionConfirm = None
 OptionChange = None
 #=======GUI BASIC CLASSES======#
 class GUIObject:
-    def __init__(self, x, y, w, h, text, scr, offset = 17):
+    def __init__(self, x, y, w, h, text, scr, offset = 0):
         self.x = x + offset
         self.y = y
         self.w = w
@@ -64,7 +64,6 @@ class GUIObject:
         self.text = text
         self.scr = scr
         self.Refresh = True
-        self.Hidden = False
 
     def SpecialDrawingRules(self,scr):pass
 
@@ -91,10 +90,6 @@ class GUIObject:
             del self
         except:
             pass
-
-    def HideObject(self, mode:bool = True):
-        self.Hidden = mode
-        self.Refresh = True
 
     def Draw(self, scr):
         x = self.x
