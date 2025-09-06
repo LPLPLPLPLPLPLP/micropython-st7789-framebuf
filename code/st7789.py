@@ -7,6 +7,7 @@ import SourceHanSans as font_20
 import framebuf
 import time
 import asyncio
+import math
 # ST7789命令定义 / ST7789 COMMAND DEFINITION
 ST7789_NOP = 0x00
 ST7789_SWRESET = 0x01
@@ -223,6 +224,52 @@ class ST7789(framebuf.FrameBuffer):
         self.fill_circle(x + w - r, y + h - r, r, color)
         self.fill_rect(x, y + r, w + 1, h - (2 * r), color)
 
+    def major_arc(self, x, y, r, start_angle, end_angle, color):
+        start_angle %= 360
+        end_angle %= 360
+        
+        if start_angle > end_angle:
+            start_angle, end_angle = end_angle, start_angle
+        
+        angle_diff = end_angle - start_angle
+        
+        if angle_diff < 180:
+            start_angle, end_angle = end_angle, start_angle + 360
+            angle_diff = 360 - angle_diff
+        
+        num_points = int(angle_diff * 2)
+        
+        for i in range(num_points + 1):
+            angle = math.radians(start_angle + i * angle_diff / num_points)
+            
+            px = x + int(r * math.cos(angle))
+            py = y + int(r * math.sin(angle))
+            
+            self.pixel(px, py, color)
+        
+    def minor_arc(self, x, y, r, start_angle, end_angle, color):
+        start_angle %= 360
+        end_angle %= 360
+        
+        if start_angle > end_angle:
+            start_angle, end_angle = end_angle, start_angle
+        
+        angle_diff = end_angle - start_angle
+        
+        if angle_diff > 180:
+            start_angle, end_angle = end_angle, start_angle + 360
+            angle_diff = 360 - angle_diff
+        
+        num_points = int(angle_diff * 2)
+        
+        for i in range(num_points + 1):
+            angle = math.radians(start_angle + i * angle_diff / num_points)
+            
+            px = x + int(r * math.cos(angle))
+            py = y + int(r * math.sin(angle))
+            
+            self.pixel(px, py, color)
+    
     def show(self):
         self.set_window()
 
