@@ -1,6 +1,8 @@
 # micropython-st7789-framebuf
-基于MicroPython的ST7789显示屏驱动和GUI库
-[English Docs HERE!](https://github.com/LPLPLPLPLPLPLP/micropython-st7789-framebuf/blob/main/README_EN.md)
+
+基于MicroPython的ST7789显示屏驱动和GUI库ヾ(≧▽≦*)o
+
+[English Docs HERE (～￣▽￣)～](https://github.com/LPLPLPLPLPLPLP/micropython-st7789-framebuf/blob/main/README_EN.md)
 ## 主要功能
 
 - 基于MicroPython的ST7789显示屏驱动
@@ -8,7 +10,7 @@
 - SPI接口支持
 - 支持FrameBuffer接口
 - 附带的基础UI控件
-- 中/英文显示 (字体来源:https://github.com/adobe-fonts/source-han-sans)
+- 中/英文显示 (字体来源:https://github.com/adobe-fonts/source-han-sans,绘制支持:https://github.com/peterhinch/micropython-font-to-py/blob/master/font_to_py.py)
 
 ## 文件结构
 
@@ -35,4 +37,8 @@ micropython-st7789-framebuf
 
 [st7789.py 显示屏驱动](https://github.com/LPLPLPLPLPLPLP/micropython-st7789-framebuf/blob/main/docs/st7789-EN.md)
 [voidui.py GUI库](https://github.com/LPLPLPLPLPLPLP/micropython-st7789-framebuf/blob/main/docs/voidui-EN.md)
+
+## 轻量级驱动
+
+如果您只想使用基础的st7789 framebuffer驱动，可以去./Lite/目录下查看，此文件是最轻量的驱动，仅包含基础功能
 
