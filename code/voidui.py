@@ -119,6 +119,7 @@ class Screen(ST7789):
         self.HighLightAttr = (0,0)
         self.HighLightRefresh = True
         self.AutoUpdateLoop = None
+        self.ChangeObjectLock = False
 
     
     def AddObject(self, obj:GUIObject):
@@ -162,7 +163,7 @@ class Screen(ST7789):
         for i in self.ChangeableObjects:
             logic_task = asyncio.create_task(i.Logic(self))
             await logic_task
-        if self.OptionChange():
+        if self.OptionChange() and (not self.ChangeObjectLock):
             if not self.OptionChangeActive:
                 GUIObj = self.Focus
                 self.display.rect(GUIObj.x-2,GUIObj.y-2,GUIObj.w+4,GUIObj.h+4,self.BackgroundColor)
@@ -332,4 +333,50 @@ class Switch(GUIObject):
                 now_c = (now_c_B + now_c_G + now_c_R)
                 now_x += (tg_x - now_x) // 2
                 scr.display.show()
+            self.Refresh = False
+
+
+class SelectBox(GUIObject):
+    def __init__(self, x:int, y:int, w:int, h:int, options:list,
+                 bg_color:int = 0xFFFF, text_color:int = 0x0000
+                 ):
+        super().__init__(x, y, w, h, "", gui)
+        self.scr.AddObject(self)
+        self.bg_color = bg_color
+        self.text_color = text_color
+        self.options = options
+        self.focus = 0
+        self.res = None
+        self.operable = False
+        self.scr.RegisterChangeableObjects(self)
+    
+    def SpecialDrawingRules(self,scr:Screen = gui) -> None:
+        x = self.x
+        y = self.y
+        w = self.w
+        h = self.h
+        scr.display.fill_rect(x, y, w, h, self.bg_color)
+        scr.display.DrawText(self.options[self.focus], x, y + 1, self.text_color)
+        self.Refresh = False
+
+    def Result(self):
+        return self.res
+
+    async def Logic(self, scr:Screen):
+        options = self.options
+        length = len(options)
+        focus = self.focus
+
+        if not self.operable and scr.OptionConfirm() and scr.Focus == self:
+            self.operable = True
+            scr.ChangeObjectLock = True
+        elif self.operable and scr.Focus == self:
+            if scr.OptionConfirm():
+                self.res = options[focus]
+                self.operable = False
+                scr.ChangeObjectLock = False
+            elif scr.OptionChange():
+                focus += 1
+                if focus >= length:
+                    focus = 0
             self.Refresh = False
