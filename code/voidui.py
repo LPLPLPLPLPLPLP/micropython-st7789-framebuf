@@ -5,6 +5,7 @@ from st7789 import ST7789
 from machine import SPI,Pin
 import framebuf
 from micropython import const
+from typings import *
 import asyncio
 #======CHANGE THESE SETTINGS========#
 TFT_RST_PIN = const(0)  # Pin RST
@@ -52,56 +53,6 @@ def Thumbnail(SourceFrame:framebuf.FrameBuffer, TargetWidth:int, TargetHeight:in
     
     return target_fb
 #=======GUI SETTINGS=====#
-OptionConfirm = None
-OptionChange = None
-#=======GUI BASIC CLASSES======#
-class GUIObject:
-    def __init__(self, x, y, w, h, text, scr, offset = 0):
-        self.x = x + offset
-        self.y = y
-        self.w = w
-        self.h = h
-        self.text = text
-        self.scr = scr
-        self.Refresh = True
-
-    def SpecialDrawingRules(self,scr):pass
-
-    def SetLocation(self, x:int, y:int) -> None:
-        self.x = x
-        self.y = y
-        self.Refresh = True
-    
-    def SetSize(self, w:int, h:int) -> None:
-        self.w = w
-        self.h = h
-        self.Refresh = True
-
-    def RemoveObject(self):
-        try:
-            self.scr.ObjectLayer.remove(self)
-            try:
-                self.scr.UnregisterChangeableObjects(self)
-            except:
-                pass
-            self.Hidden = True
-            self.Refresh = True
-            asyncio.create_task(self.Draw(self.scr))
-            del self
-        except:
-            pass
-
-    def Draw(self, scr):
-        x = self.x
-        y = self.y
-        w = self.w
-        h = self.h
-        tmp = framebuf.FrameBuffer(bytearray(w*h*2),w,h,framebuf.RGB565)
-        scr.display.blit(tmp,x,y)
-        #if self.Hidden:return
-        self.SpecialDrawingRules(scr)
-    def Logic(self):pass
-
 
 class Screen(ST7789):
     def __init__(self):
@@ -112,8 +63,8 @@ class Screen(ST7789):
         self.ChangeableObjects = []
         self.Focus:GUIObject = None
         self.SelsetIndex = 0
-        self.OptionConfirm = OptionConfirm
-        self.OptionChange = OptionChange
+        self.OptionConfirm = None
+        self.OptionChange = None
         self.OptionChangeActive = False
         self.HighLightLoc = (0,0)
         self.HighLightAttr = (0,0)
@@ -194,8 +145,9 @@ class Screen(ST7789):
                 self.AutoUpdateLoop = asyncio.get_event_loop()
             self.AutoUpdateLoop.create_task(self._async_auto_update())
             self.AutoUpdateLoop.run_forever()
-        else:
-            self.AutoUpdateLoop.close()
+        elif self.AutoUpdateLoop is not None:
+                self.AutoUpdateLoop.close()
+                self.AutoUpdateLoop = None
 
 
 gui = Screen()
@@ -240,7 +192,7 @@ class Label(GUIObject):
         self.bg_color = bg_color
         self.text_color = text_color
 
-    def Update(self,text:str, scr:Screen = gui):
+    def update(self,text:str, scr:Screen = gui):
         scr.display.fill_rect(self.x, self.y, self.w, self.h, scr.BackgroundColor)
         self.text = text
         self.w = scr.display.GetTextWidth(text) + (2*len(text))
@@ -274,7 +226,7 @@ class TextArea(GUIObject):
         scr.display.DrawText(self.text, x, y + 1, self.text_color)
         self.Refresh = False
 
-    def Update(self,text:str):
+    def update(self,text:str):
         self.text = text
         self.Refresh = True
 
@@ -380,3 +332,30 @@ class SelectBox(GUIObject):
                 if focus >= length:
                     focus = 0
             self.Refresh = False
+
+class ArcProgressBar(GUIObject):
+    def __init__(self, x:int, y:int, r:int, percent:int = 0,
+                 bg_color:int=0x0C0C, color:int = 0x0F0F, wide = 5):
+        super().__init__(x, y, r, 1, "", gui)
+        self.scr.AddObject(self)
+        self.bg_color = bg_color
+        self.color = color
+        self.percent = percent
+        self.wide = wide
+    
+    def SpecialDrawingRules(self,scr:Screen = gui) -> None:
+        x = self.x
+        y = self.y
+        r = self.r
+        percent = self.percent
+        draw_angle = int((percent/10)*24)
+        if draw_angle > 0:
+            scr.arc(x, y, r, 150, draw_angle, self.color, False, wide = self.wide)
+        if draw_angle < 240:
+            scr.arc(x, y, r, 150 + draw_angle, 240 - draw_angle, self.bg_color, False, wide = self.wide)
+        self.Refresh = False
+
+    def update(self, percent:int):
+        self.percent = percent
+        self.Refresh = True
+

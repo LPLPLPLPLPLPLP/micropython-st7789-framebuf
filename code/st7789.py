@@ -225,12 +225,14 @@ class ST7789(framebuf.FrameBuffer):
         self.fill_rect(x, y + r, w + 1, h - (2 * r), color)
 
     def arc(self, x, y, r, start_angle, draw_angle, color, direction: bool = True, wide=1):
+        # 关于参数direction说明
+        # About parameter direction:
+        # 关于参数direction说明
+        # 当direction为True时，从start_angle开始顺时针绘制，否则从start_angle开始逆时针绘制
+
         start_angle %= 360
-        
-        if direction:
-            end_angle = start_angle + draw_angle
-        else:
-            end_angle = start_angle - draw_angle
+        draw_angle = 360 - draw_angle
+        end_angle = start_angle - draw_angle if direction else start_angle + draw_angle
         
         if draw_angle >= 0 and end_angle < start_angle:
             end_angle += 360
@@ -252,8 +254,6 @@ class ST7789(framebuf.FrameBuffer):
                 py = y + int(r * math.sin(angle_rad))
                 
                 self.pixel(px, py, color)
-            
-            # 减小半径以绘制宽弧
             r -= 1
 
     def show(self):
