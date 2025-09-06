@@ -224,61 +224,40 @@ class ST7789(framebuf.FrameBuffer):
         self.fill_circle(x + w - r, y + h - r, r, color)
         self.fill_rect(x, y + r, w + 1, h - (2 * r), color)
 
-    def major_arc(self, x, y, r, start_angle, end_angle, color):
+    def arc(self, x, y, r, start_angle, draw_angle, color, direction: bool = True, wide=1):
         start_angle %= 360
-        end_angle %= 360
         
-        if start_angle > end_angle:
-            start_angle, end_angle = end_angle, start_angle
+        if direction:
+            end_angle = start_angle + draw_angle
+        else:
+            end_angle = start_angle - draw_angle
+        
+        if draw_angle >= 0 and end_angle < start_angle:
+            end_angle += 360
+        elif end_angle > start_angle:
+            end_angle -= 360
         
         angle_diff = end_angle - start_angle
         
-        if angle_diff < 180:
-            start_angle, end_angle = end_angle, start_angle + 360
-            angle_diff = 360 - angle_diff
+        num_points = int(abs(angle_diff) * 2)
         
-        num_points = int(angle_diff * 2)
-        
-        for i in range(num_points + 1):
-            angle = math.radians(start_angle + i * angle_diff / num_points)
+        for _ in range(wide):
+            for i in range(num_points + 1):
+                progress = i / num_points
+                current_angle = start_angle + progress * angle_diff
+                
+                angle_rad = math.radians(current_angle)
+                
+                px = x + int(r * math.cos(angle_rad))
+                py = y + int(r * math.sin(angle_rad))
+                
+                self.pixel(px, py, color)
             
-            px = x + int(r * math.cos(angle))
-            py = y + int(r * math.sin(angle))
-            
-            self.pixel(px, py, color)
-        
-    def minor_arc(self, x, y, r, start_angle, end_angle, color):
-        start_angle %= 360
-        end_angle %= 360
-        
-        if start_angle > end_angle:
-            start_angle, end_angle = end_angle, start_angle
-        
-        angle_diff = end_angle - start_angle
-        
-        if angle_diff > 180:
-            start_angle, end_angle = end_angle, start_angle + 360
-            angle_diff = 360 - angle_diff
-        
-        num_points = int(angle_diff * 2)
-        
-        for i in range(num_points + 1):
-            angle = math.radians(start_angle + i * angle_diff / num_points)
-            
-            px = x + int(r * math.cos(angle))
-            py = y + int(r * math.sin(angle))
-            
-            self.pixel(px, py, color)
-    
+            # 减小半径以绘制宽弧
+            r -= 1
+
     def show(self):
         self.set_window()
-
-        if self.dpr_buffer_hash != bytes(self.buffer).__hash__():
-            self.dpr_buffer_hash = bytes(self.buffer).__hash__()
-        else:
-            if self.fpsc:
-                self.fps += 1
-            return
 
         if self.cs:
             self.cs(0)
