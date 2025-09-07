@@ -95,8 +95,10 @@ class GUIObject:
         y = self.y
         w = self.w
         h = self.h
-        tmp = framebuf.FrameBuffer(bytearray(w*h*2),w,h,framebuf.RGB565)
-        scr.display.blit(tmp,x,y)
+        size = (w*h*2)
+        if size:
+            tmp = framebuf.FrameBuffer(bytearray(w*h*2),w,h,framebuf.RGB565)
+            scr.display.blit(tmp,x,y)
         self.SpecialDrawingRules(scr)
     def Logic(self):pass
     
@@ -344,8 +346,11 @@ class SelectBox(GUIObject):
         self.text_color = text_color
         self.options = options
         self.focus = 0
-        self.res = None
+        self.res = ""
         self.operable = False
+        self.ConfirmLock = False
+        self.ChangeLock = False
+        
         self.scr.RegisterChangeableObjects(self)
     
     def SpecialDrawingRules(self,scr:Screen = gui) -> None:
@@ -353,8 +358,14 @@ class SelectBox(GUIObject):
         y = self.y
         w = self.w
         h = self.h
+        options = self.options
         scr.display.fill_rect(x, y, w, h, self.bg_color)
-        scr.display.DrawText(self.options[self.focus], x, y + 1, self.text_color)
+        for i in range(len(options)):
+            if self.focus == i and self.operable:
+                scr.display.fill_rect(x, y + 1 + i * 20, self.w - 4, 20,self.text_color)
+                scr.display.DrawText(options[i], x, y + 1 + i * 20, (0xFFFF-self.text_color))
+            else:
+                scr.display.DrawText(options[i], x, y + 1 + i * 20, self.text_color)
         self.Refresh = False
 
     def Result(self):
@@ -364,20 +375,34 @@ class SelectBox(GUIObject):
         options = self.options
         length = len(options)
         focus = self.focus
-
-        if not self.operable and scr.OptionConfirm() and scr.Focus == self:
+        print(self.operable)
+        if scr.Focus != self:
+            return
+        if not self.operable and scr.OptionConfirm() and scr.Focus == self and not self.ConfirmLock:
             self.operable = True
             scr.ChangeObjectLock = True
-        elif self.operable and scr.Focus == self:
+            self.ConfirmLock = True
+        else:
+            self.ConfirmLock = False
+        if self.operable and scr.Focus == self:
             if scr.OptionConfirm():
-                self.res = options[focus]
-                self.operable = False
-                scr.ChangeObjectLock = False
-            elif scr.OptionChange():
-                focus += 1
-                if focus >= length:
-                    focus = 0
-            self.Refresh = False
+                if not self.ConfirmLock:
+                    self.res = options[focus]
+                    self.operable = False
+                    scr.ChangeObjectLock = False
+                    self.ConfirmLock = True
+            else:
+                self.ConfirmLock = False
+            if scr.OptionChange():
+                if not self.ChangeLock:
+                    focus += 1
+                    if focus >= length:
+                        focus = 0
+                    self.focus = focus
+                    self.ChangeLock = True
+            else:
+                self.ChangeLock = False
+            self.Refresh = True
 
 class ArcProgressBar(GUIObject):
     def __init__(self, x:int, y:int, r:int, percent:int = 0,
