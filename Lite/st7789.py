@@ -3,7 +3,6 @@
 # LICENCE: GPL v3.0
 from machine import Pin,SPI
 from micropython import const
-import SourceHanSans as font_20
 import framebuf
 import time
 # ST7789命令定义 / ST7789 COMMAND DEFINITION
@@ -44,7 +43,24 @@ class ST7789(framebuf.FrameBuffer):
         # INIT DISPLAY
         # 初始化屏幕
         self.reset()
-        self._init_display()
+
+        # 初始化序列 / INITIALIZATION SEQUENCE
+        init_cmds = [
+            (ST7789_SWRESET,None),                          # 软件复位 / SOFTWARE RESET
+            (ST7789_SLPOUT,None),                           # 退出睡眠模式 / EXIT SLEEP MODE
+            (ST7789_COLMOD,bytearray([COLOR_MODE_16BIT])),  # 设置颜色模式 (16位RGB565) / SET COLOR MODE (16BIT RGB565)
+            (ST7789_INVOFF,None),                           # 关闭反色显示 / INVERT OFF
+            (ST7789_NORON,None),                            # 正常显示模式 / NORMAL DISPLAY MODE
+            (ST7789_DISPON,None),                           # 开启显示 / DISPLAY ON
+            (ST7789_MADCTL,bytearray([MADCTL_MODE]))        # 设置屏幕方向 / SET SCREEN ORIENTATION
+        ]
+        
+        for cmd, data in init_cmds:
+            self.write_cmd(cmd)
+            if data:
+                self.write_data(data)
+            time.sleep_ms(100)
+
         # CREATE FRAMEBUF
         # 创建帧缓冲区
         self.buffer = bytearray(self.width * self.height * 2)
@@ -75,23 +91,6 @@ class ST7789(framebuf.FrameBuffer):
         self.spi.write(buf)
         self.cs(1)
     
-    def _init_display(self):
-        # 初始化序列 / INITIALIZATION SEQUENCE
-        init_cmds = [
-            (ST7789_SWRESET,None),                          # 软件复位 / SOFTWARE RESET
-            (ST7789_SLPOUT,None),                           # 退出睡眠模式 / EXIT SLEEP MODE
-            (ST7789_COLMOD,bytearray([COLOR_MODE_16BIT])),  # 设置颜色模式 (16位RGB565) / SET COLOR MODE (16BIT RGB565)
-            (ST7789_INVOFF,None),                           # 关闭反色显示 / INVERT OFF
-            (ST7789_NORON,None),                            # 正常显示模式 / NORMAL DISPLAY MODE
-            (ST7789_DISPON,None),                           # 开启显示 / DISPLAY ON
-            (ST7789_MADCTL,bytearray([MADCTL_MODE]))               # 设置屏幕方向 / SET SCREEN ORIENTATION
-        ]
-        
-        for cmd, data in init_cmds:
-            self.write_cmd(cmd)
-            if data:
-                self.write_data(data)
-            time.sleep_ms(100)
     def init_window(self, x0:int, y0:int, x1:int, y1:int) -> None:
         # 设置列地址范围 / SET COLUMN ADDRESS RANGE
         self.write_cmd(ST7789_CASET)
@@ -106,17 +105,12 @@ class ST7789(framebuf.FrameBuffer):
             y0 >> 8, y0 & 0xFF, 
             y1 >> 8, y1 & 0xFF
         ]))
-
-    def set_window(self) -> None:
-        # 准备写入显示数据 / PREPARE TO WRITE DISPLAY DATA
-        self.write_cmd(ST7789_RAMWR)
         
     def show(self):
-        self.set_window()
+        self.write_cmd(ST7789_RAMWR)
         if self.cs:
             self.cs(0)
         self.dc(1)
-        #写入有效数据 WRITE VALID DATA
         self.spi.write(self.buffer)
         if self.cs:
             self.cs(1)
