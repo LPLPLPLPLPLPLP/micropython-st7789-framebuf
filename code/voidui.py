@@ -6,7 +6,7 @@ from machine import SPI,Pin
 import framebuf
 from micropython import const
 from typings import *
-import asyncio
+import asyncio,gc
 #======CHANGE THESE SETTINGS========#
 TFT_RST_PIN = const(0)  # Pin RST
 TFT_LED_PIN = const(12) 
@@ -83,7 +83,6 @@ class GUIObject:
                 self.scr.UnregisterChangeableObjects(self)
             except:
                 pass
-            self.Hidden = True
             self.Refresh = True
             asyncio.create_task(self.Draw(self.scr))
             del self
@@ -130,6 +129,7 @@ class Screen(ST7789):
         self.ObjectLayer[self.ObjectLayer.index(obj2)] = obj1
 
     def RegisterChangeableObjects(self,gui_obj:GUIObject) -> None:
+        gui_obj.Changeable = True
         self.ChangeableObjects.append(gui_obj)
         if self.Focus is None:
             self.Focus = self.ChangeableObjects[0]
@@ -181,6 +181,7 @@ class Screen(ST7789):
         task_label_logic = asyncio.create_task(self._async_label_logic())
         await task_update_label
         await task_label_logic
+        gc.collect()
 
     async def _async_auto_update(self):
         while True:
@@ -197,20 +198,19 @@ class Screen(ST7789):
                 self.AutoUpdateLoop.close()
                 self.AutoUpdateLoop = None
 
-
 gui = Screen()
 tft = gui.display
 
-# GUI LABEL CLASSES #
+# GUI WIDGET CLASSES #  
 
 class Button(GUIObject):
     def __init__(self, x:int, y:int, text:str,
-                 bg_color:int, text_color:int, trigger:function):
+                 bg_color:int, text_color:int, callback:function):
         
         super().__init__(x, y, gui.display.GetTextWidth(text)+4, 20, text, gui)
         self.bg_color = bg_color
         self.text_color = text_color
-        self.trigger = trigger
+        self.callback = callback
         self.scr.RegisterChangeableObjects(self)
         self.scr.AddObject(self)
         self.active = False
@@ -227,7 +227,7 @@ class Button(GUIObject):
     async def Logic(self, scr:Screen = gui):
         if scr.OptionConfirm() and scr.Focus == self:
             if not self.active:
-                self.trigger()
+                self.callback()
             self.active = True
         else:
             self.active = False
@@ -363,7 +363,7 @@ class SelectBox(GUIObject):
         scr.display.fill_rect(x, y, w, h, self.bg_color)
         for i in range(min(len(options),self.Line)):
             if self.focus == i and self.operable:
-                scr.display.fill_rect(x, y + 1 + i * 20, self.w - 4, 20,self.text_color)
+                scr.display.fill_rect(x, y + 1 + i * 20, self.w - 2, 20,self.text_color)
                 scr.display.DrawText(options[i], x, y + 1 + i * 20, (0xFFFF-self.text_color))
             else:
                 scr.display.DrawText(options[i], x, y + 1 + i * 20, self.text_color)
@@ -376,32 +376,29 @@ class SelectBox(GUIObject):
         options = self.options
         length = len(options)
         focus = self.focus
-        print(self.operable)
         if scr.Focus != self:
             return
-        if not self.operable and scr.OptionConfirm() and scr.Focus == self and not self.ConfirmLock:
+        elif not self.operable and scr.OptionConfirm() and not self.ConfirmLock:
             self.operable = True
             scr.ChangeObjectLock = True
             self.ConfirmLock = True
-        else:
+        elif not scr.OptionConfirm():
             self.ConfirmLock = False
-        if self.operable and scr.Focus == self:
-            if scr.OptionConfirm():
-                if not self.ConfirmLock:
-                    self.res = options[focus]
-                    self.operable = False
-                    scr.ChangeObjectLock = False
-                    self.ConfirmLock = True
-            else:
+        elif self.operable and scr.Focus == self:
+            if scr.OptionConfirm() and not self.ConfirmLock:
+                self.res = options[focus]
+                self.operable = False
+                scr.ChangeObjectLock = False
+                self.ConfirmLock = True
+            elif not scr.OptionConfirm():
                 self.ConfirmLock = False
-            if scr.OptionChange():
-                if not self.ChangeLock:
-                    focus += 1
-                    if focus >= length:
-                        focus = 0
-                    self.focus = focus
-                    self.ChangeLock = True
-            else:
+            elif scr.OptionChange() and not self.ChangeLock:
+                focus += 1
+                if focus >= length:
+                    focus = 0
+                self.focus = focus
+                self.ChangeLock = True
+            elif not scr.OptionChange():
                 self.ChangeLock = False
             self.Refresh = True
 
