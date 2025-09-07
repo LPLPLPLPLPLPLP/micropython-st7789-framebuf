@@ -1,5 +1,5 @@
 # st7789 framebuf driver for MicroPython
-# VoidEngineby LP_OVER
+# voidui by LP_OVER
 # LICENCE: GPL v3.0
 from st7789 import ST7789
 from machine import SPI,Pin
@@ -350,6 +350,7 @@ class SelectBox(GUIObject):
         self.operable = False
         self.ConfirmLock = False
         self.ChangeLock = False
+        self.Line = h // 20
         
         self.scr.RegisterChangeableObjects(self)
     
@@ -360,7 +361,7 @@ class SelectBox(GUIObject):
         h = self.h
         options = self.options
         scr.display.fill_rect(x, y, w, h, self.bg_color)
-        for i in range(len(options)):
+        for i in range(min(len(options),self.Line)):
             if self.focus == i and self.operable:
                 scr.display.fill_rect(x, y + 1 + i * 20, self.w - 4, 20,self.text_color)
                 scr.display.DrawText(options[i], x, y + 1 + i * 20, (0xFFFF-self.text_color))
