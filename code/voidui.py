@@ -384,14 +384,13 @@ class SelectBox(GUIObject):
             self.ConfirmLock = True
         elif not scr.OptionConfirm():
             self.ConfirmLock = False
-        elif self.operable and scr.Focus == self:
-            if scr.OptionConfirm() and not self.ConfirmLock:
-                self.res = options[focus]
-                self.operable = False
-                scr.ChangeObjectLock = False
+        elif self.operable:
+            if scr.OptionConfirm():
+                if not self.ConfirmLock:
+                    self.res = options[focus]
+                    self.operable = False
+                    scr.ChangeObjectLock = False
                 self.ConfirmLock = True
-            elif not scr.OptionConfirm():
-                self.ConfirmLock = False
             elif scr.OptionChange() and not self.ChangeLock:
                 focus += 1
                 if focus >= length:
