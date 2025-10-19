@@ -5,7 +5,7 @@ from machine import Pin,SPI
 from micropython import const
 import framebuf
 import time
-import asyncio
+import asyncio,_thread
 import math
 # ST7789命令定义 / ST7789 COMMAND DEFINITION
 ST7789_NOP = 0x00
@@ -60,7 +60,7 @@ class ST7789(framebuf.FrameBuffer):
         self.reset()
         self._init_display()
         # SET FONT / 设置字体
-        self.font = FontsLinker(font)
+        self.font = FontsLinker(font).font
         # CREATE FRAMEBUF / 创建帧缓冲区
         self.buffer = bytearray(self.width * self.height * 2)
         # INIT FRAMEBUF / 初始化FrameBuffer (RGB565格式)
@@ -133,49 +133,41 @@ class ST7789(framebuf.FrameBuffer):
     
     def GetTextWidth(self, text:str) -> int:
         total_width = 0
+        ft = self.font
         for char in text:
             if char == " ":
-                total_width += 12
+                total_width += ft.max_width()//2
                 continue
-            width = self.font.get_ch(char)[2]
+            width = ft.get_ch(char)[2]
             total_width += width
         return total_width
 
-    async def FPSCounter(self) -> None:
+    def _print_fps(self):
         while self.fpsc:
-            await asyncio.sleep(1)
+            time.sleep(1)
             print(self.fps)
             self.fps = 0
-
-    async def FramePerSecondInfo(self, mode:bool = True) -> None:
+    def FPSCounter(self, mode:bool = True) -> None:
         self.fpsc = mode
         if mode:
-            task = asyncio.create_task(self.FPSCounter())
-            await task
-
+            _thread.start_new_thread(self._print_fps, ())
     def DrawText(self, text:str, x:int, y:int, color:int,
                  offset = 0, wrap:bool = False, w:int = None,
-                 buffer:bytearray = None, slope:float = 0.0):
+                 buffer:bytearray = super(), slope:float = 0.0):
         orig_x = x + offset 
         curr_x = orig_x
         curr_y = y
-        if buffer is None:
-            fbuf = super()
-        else:
-            fbuf = buffer
+        fbuf = buffer
         
-        font = self.font.font
+        ft = self.font
+        get_ch = ft.get_ch
+        font_height = ft.height()
+        font_width = ft.max_width()
 
-        get_ch = font.get_ch
-
-        font_height = font.height()
-        font_width = font.max_width()
-
-        memviews = b''
         total_width = 0
         for char in text:
             if char == " ":
-                curr_x += font_width
+                curr_x += font_width//2
                 continue
             elif char == '\n' and wrap:
                 curr_x = orig_x
@@ -184,31 +176,30 @@ class ST7789(framebuf.FrameBuffer):
             mv, height, width = get_ch(char)
             original_width = width
             width += int(height * slope)
-            memviews += mv
             row_bytes = (original_width + 7) // 8
 
             pixel_offset = int(height * slope) - 1 if slope > 0.0 else 0
-            idk_how_to_describe_this_var:float = 0.0 # The name of this var is just a joke,but it just a internal variable, nobody cares lol.
+            accrued:float = 0.0
 
             for ny in range(height):
                 row_start = ny * row_bytes
-                idk_how_to_describe_this_var += slope
+                accrued += slope
                 for nx in range(original_width):
                     byte_idx = row_start + (nx // 8)
                     bit_mask = 1 << (7 - (nx % 8))
                     if mv[byte_idx] & bit_mask:
                         fbuf.pixel(curr_x + nx + pixel_offset, curr_y + ny, color)
-                if idk_how_to_describe_this_var >= 1.0:
-                    pixel_offset -= int(idk_how_to_describe_this_var)
-                    idk_how_to_describe_this_var = 0.0
+                if accrued >= 1.0:
+                    pixel_offset -= int(accrued)
+                    accrued = 0.0
             curr_x += original_width + int(slope)
             total_width += original_width + int(slope)
             if w is not None and total_width + font_height > w:
-                return memviews,total_width,font_height
+                return total_width,font_height
             if wrap and curr_x >= self.width - font_height:
                 curr_x = orig_x
                 curr_y += font_height
-        return memviews,total_width,font_height
+        return total_width,font_height
     
     def curved_side_rect(self, x:int, y:int, w:int, h:int, color:int) -> int:
         r = h // 2
@@ -218,8 +209,7 @@ class ST7789(framebuf.FrameBuffer):
         return r
     
     def fill_round_rect(self, x, y, w, h, r, color):
-        # Draw a filled rounded rectangle
-        # 绘制填充圆角矩形
+        # Draw a filled rounded rectangle/绘制填充圆角矩形
         self.fill_circle(x + r, y + r, r, color)
         self.fill_circle(x + w - r, y + r, r, color)
         self.fill_rect(x + r, y, w - (2 * r), h + 1, color)
@@ -228,9 +218,7 @@ class ST7789(framebuf.FrameBuffer):
         self.fill_rect(x, y + r, w + 1, h - (2 * r), color)
 
     def arc(self, x, y, r, start_angle, draw_angle, color, direction: bool = True, wide=1):
-        # 关于参数direction说明
-        # About parameter direction:
-        # 关于参数direction说明
+        # 关于参数direction说明/About parameter direction:
         # 当direction为True时，从start_angle开始顺时针绘制，否则从start_angle开始逆时针绘制
 
         start_angle %= 360
@@ -261,11 +249,9 @@ class ST7789(framebuf.FrameBuffer):
 
     def show(self):
         self.set_window()
-
         if self.cs:
             self.cs(0)
         self.dc(1)
-        
         # 填充未使用缓冲区(可选)
         # FILL UNUSED BUFFER (OPTIONAL).IF YOU FOUND THAT THE DISPLAY IS NOT WORKING PROPERLY, YOU CAN TRY THIS.
         for _ in range(70):
