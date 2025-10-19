@@ -3,7 +3,6 @@
 # LICENCE: GPL v3.0
 from machine import Pin,SPI
 from micropython import const
-import SourceHanSans as font_20
 import framebuf
 import time
 import asyncio
@@ -33,8 +32,14 @@ MADCTL_MV  = const(0b00100000)  # 行列交换   / SWAP ROW/COLUMN
 MADCTL_ML  = const(0b00010000)  # 左右交换   / SWAP LEFT/RIGHT
 MADCTL_MODE = MADCTL_MY | MADCTL_MV | 0b00001010
         
+class FontsLinker():
+    def __init__(self, file_path):
+        f_path = file_path.split('/')[-1] if "/" in file_path else file_path
+        self.font = __import__(f_path.split('.')[0]) if "." in f_path else __import__(f_path)
+    
+
 class ST7789(framebuf.FrameBuffer):
-    def __init__(self, width, height, spi, dc, rst, cs=None, font=None):
+    def __init__(self, width, height, spi, dc, rst, cs=None, font="SourceHanSans"):
         self.width = width
         self.height = height
         self.spi = spi
@@ -46,30 +51,26 @@ class ST7789(framebuf.FrameBuffer):
 
         self.dpr_buffer_hash = 0
 
-        # INIT CONTROL PINS
-        # 初始化控制引脚
+        # INIT CONTROL PINS / 初始化控制引脚
         dc.init(dc.OUT, value=0)
         rst.init(rst.OUT, value=1)
         if cs:
             cs.init(cs.OUT, value=1)
-        # INIT DISPLAY
-        # 初始化屏幕
+        # INIT DISPLAY / 初始化屏幕
         self.reset()
         self._init_display()
-        # CREATE FRAMEBUF
-        # 创建帧缓冲区
+        # SET FONT / 设置字体
+        self.font = FontsLinker(font)
+        # CREATE FRAMEBUF / 创建帧缓冲区
         self.buffer = bytearray(self.width * self.height * 2)
-        # INIT FRAMEBUF
-        # 初始化FrameBuffer (RGB565格式)
+        # INIT FRAMEBUF / 初始化FrameBuffer (RGB565格式)
         super().__init__(self.buffer, self.width, self.height, framebuf.RGB565)
-        # OPEN BACKLIGHT
-        # 开启背光
+        # OPEN BACKLIGHT / 开启背光
         self.bl = Pin(45, Pin.OUT)  # 根据实际连接修改引脚
         self.bl(1)
         # 设置全屏窗口 / SET FULL SCREEN WINDOW
         self.init_window(0, 0, self.width - 1, self.height - 1)
-        # CLEAR SCREEN
-        # 清屏并显示
+        # CLEAR SCREEN / 清屏
         self.fill(0)
         self.show()
 
@@ -136,7 +137,7 @@ class ST7789(framebuf.FrameBuffer):
             if char == " ":
                 total_width += 12
                 continue
-            width = font_20.get_ch(char)[2]
+            width = self.font.get_ch(char)[2]
             total_width += width
         return total_width
 
@@ -163,10 +164,12 @@ class ST7789(framebuf.FrameBuffer):
         else:
             fbuf = buffer
         
-        get_ch = font_20.get_ch
+        font = self.font.font
 
-        font_height = font_20.height()
-        font_width = font_20.max_width()
+        get_ch = font.get_ch
+
+        font_height = font.height()
+        font_width = font.max_width()
 
         memviews = b''
         total_width = 0
