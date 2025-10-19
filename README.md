@@ -12,6 +12,11 @@
 - 附带的基础UI控件
 - 中/英文显示 (字体来源:https://github.com/adobe-fonts/source-han-sans,绘制支持:https://github.com/peterhinch/micropython-font-to-py/blob/master/font_to_py.py)
 
+## 关于字体
+
+字体源:[思源黑体](https://github.com/adobe-fonts/source-han-sans)
+micropython字节码处理:[micropython_font-to-py](https://github.com/peterhinch/micropython-font-to-py)
+
 ## 文件结构
 
 ```

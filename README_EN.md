@@ -11,6 +11,11 @@ A st7789 framebuf driver for micropython-esp32s3 ヾ(≧▽≦*)o
 - Support GUI Label
 - Chinese / English Text Support (Font:https://github.com/adobe-fonts/source-han-sans, Drawing Support:https://github.com/peterhinch/micropython-font-to-py/blob/master/font_to_py.py)
 
+## About Fonts
+
+Source:[source-han-sans](https://github.com/adobe-fonts/source-han-sans)
+Micropython bytecode handling:[micropython_font-to-py](https://github.com/peterhinch/micropython-font-to-py)
+
 ## File Structure
 
 ```
