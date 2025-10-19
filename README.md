@@ -35,8 +35,8 @@ micropython-st7789-framebuf
 
 ## 详细文档介绍
 
-[st7789.py 显示屏驱动](https://github.com/LPLPLPLPLPLPLP/micropython-st7789-framebuf/blob/main/docs/st7789-EN.md)
-[voidui.py GUI库](https://github.com/LPLPLPLPLPLPLP/micropython-st7789-framebuf/blob/main/docs/voidui-EN.md)
+[st7789.py 显示屏驱动](https://github.com/LPLPLPLPLPLPLP/micropython-st7789-framebuf/blob/main/docs/st7789.md)
+[voidui.py GUI库](https://github.com/LPLPLPLPLPLPLP/micropython-st7789-framebuf/blob/main/docs/voidui.md)
 
 ## 轻量级驱动
 
