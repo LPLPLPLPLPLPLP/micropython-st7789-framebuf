@@ -5,7 +5,7 @@ from machine import Pin,SPI
 from micropython import const
 import framebuf
 import time
-import asyncio,_thread
+import _thread
 import math
 # ST7789命令定义 / ST7789 COMMAND DEFINITION
 ST7789_NOP = 0x00
@@ -80,13 +80,13 @@ class ST7789(framebuf.FrameBuffer):
         self.rst(1)
         time.sleep_ms(150)
     
-    def write_cmd(self, cmd):
+    def write_cmd(self, cmd:int):
         self.cs(0)
         self.dc(0)
         self.spi.write(bytearray([cmd]))
         self.cs(1)
     
-    def write_data(self, buf):
+    def write_data(self, buf:bytearray):
         self.cs(0)
         self.dc(1)
         self.spi.write(buf)
@@ -95,13 +95,13 @@ class ST7789(framebuf.FrameBuffer):
     def _init_display(self):
         # 初始化序列 / INITIALIZATION SEQUENCE
         init_cmds = [
-            (ST7789_SWRESET,None),                          # 软件复位 / SOFTWARE RESET
-            (ST7789_SLPOUT,None),                           # 退出睡眠模式 / EXIT SLEEP MODE
+            (ST7789_SWRESET,None),                          # 软件复位                  / SOFTWARE RESET
+            (ST7789_SLPOUT,None),                           # 退出睡眠模式              / EXIT SLEEP MODE
             (ST7789_COLMOD,bytearray([COLOR_MODE_16BIT])),  # 设置颜色模式 (16位RGB565) / SET COLOR MODE (16BIT RGB565)
-            (ST7789_INVOFF,None),                           # 关闭反色显示 / INVERT OFF
-            (ST7789_NORON,None),                            # 正常显示模式 / NORMAL DISPLAY MODE
-            (ST7789_DISPON,None),                           # 开启显示 / DISPLAY ON
-            (ST7789_MADCTL,bytearray([MADCTL_MODE]))               # 设置屏幕方向 / SET SCREEN ORIENTATION
+            (ST7789_INVOFF,None),                           # 关闭反色显示              / INVERT OFF
+            (ST7789_NORON,None),                            # 正常显示模式              / NORMAL DISPLAY MODE
+            (ST7789_DISPON,None),                           # 开启显示                  / DISPLAY ON
+            (ST7789_MADCTL,bytearray([MADCTL_MODE]))        # 设置屏幕方向              / SET SCREEN ORIENTATION
         ]
         
         for cmd, data in init_cmds:
@@ -129,6 +129,7 @@ class ST7789(framebuf.FrameBuffer):
         self.write_cmd(ST7789_RAMWR)
         
     def invert(self,mode:bool):
+        # 显示内容反转 / INVERT DISPLAY CONTENT
         self.write_cmd(ST7789_INVON if mode else ST7789_INVOFF)
     
     def GetTextWidth(self, text:str) -> int:
@@ -138,8 +139,7 @@ class ST7789(framebuf.FrameBuffer):
             if char == " ":
                 total_width += ft.max_width()//2
                 continue
-            width = ft.get_ch(char)[2]
-            total_width += width
+            total_width += ft.ifb(ft._mvfont[ft.bs(ft._mvsp, ord(char)) << 3:])
         return total_width
 
     def _print_fps(self):
@@ -166,14 +166,17 @@ class ST7789(framebuf.FrameBuffer):
 
         total_width = 0
         for char in text:
+            # 处理空格字符 / HANDLE SPACE CHARACTER
             if char == " ":
                 curr_x += font_width//2
                 continue
+            # 处理换行符 / HANDLE NEWLINE CHARACTER
             elif char == '\n' and wrap:
                 curr_x = orig_x
                 curr_y += font_height
                 continue
             mv, height, width = get_ch(char)
+            if mv is None: continue
             original_width = width
             width += int(height * slope)
             row_bytes = (original_width + 7) // 8
