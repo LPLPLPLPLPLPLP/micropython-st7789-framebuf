@@ -203,12 +203,12 @@ class ST7789(framebuf.FrameBuffer):
                     idk_how_to_describe_this_var = 0.0
             curr_x += original_width + int(slope)
             total_width += original_width + int(slope)
-            if w is not None and total_width + 20 > w:
-                return memviews,total_width,20
-            if wrap and curr_x >= self.width - 20:
+            if w is not None and total_width + font_height > w:
+                return memviews,total_width,font_height
+            if wrap and curr_x >= self.width - font_height:
                 curr_x = orig_x
-                curr_y += 20
-        return memviews,total_width,20
+                curr_y += font_height
+        return memviews,total_width,font_height
     
     def curved_side_rect(self, x:int, y:int, w:int, h:int, color:int) -> int:
         r = h // 2
