@@ -42,3 +42,4 @@ micropython-st7789-framebuf
 
 如果您只想使用基础的st7789 framebuffer驱动，可以去./Lite/目录下查看，此文件是最轻量的驱动，仅包含基础功能
 
+## 使用时遇到的问题，请提issues或提交pr（

@@ -33,5 +33,3 @@ micropython-st7789-framebuf
 ## Lite Driver
 
 If you just want to use the basic st7789 framebuffer driver, you can go to the ./Lite/ directory to view the light driver file. This file only contains the basic functions.
-
-(English is not my native language. There may be grammatical errors in some of the descriptions.ヽ(*。>Д<)o゜)
