@@ -153,13 +153,14 @@ class ST7789(framebuf.FrameBuffer):
             _thread.start_new_thread(self._print_fps, ())
     def DrawText(self, text:str, x:int, y:int, color:int,
                  offset = 0, wrap:bool = False, w:int = None,
-                 buffer:bytearray = super(), slope:float = 0.0):
+                 buffer:bytearray = super(), slope:float = 0.0,
+                 font:FontsLinker = None):
         orig_x = x + offset 
         curr_x = orig_x
         curr_y = y
         fbuf = buffer
         
-        ft = self.font
+        ft = self.font if font is None else font
         get_ch = ft.get_ch
         font_height = ft.height()
         font_width = ft.max_width()
