@@ -7,6 +7,7 @@ import framebuf
 import time
 import _thread
 import math
+import sys
 # ST7789命令定义 / ST7789 COMMAND DEFINITION
 ST7789_NOP = 0x00
 ST7789_SWRESET = 0x01
@@ -35,6 +36,8 @@ MADCTL_MODE = MADCTL_MY | MADCTL_MV | 0b00001010
 class FontsLinker():
     def __init__(self, file_path):
         f_path = file_path.split('/')[-1] if "/" in file_path else file_path
+        module_path = file_path[:(len(file_path)-len(f_path))]
+        sys.path.append(module_path)
         self.font = __import__(f_path.split('.')[0]) if "." in f_path else __import__(f_path)
     
 
