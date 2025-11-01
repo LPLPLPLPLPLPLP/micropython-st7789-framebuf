@@ -8,6 +8,7 @@ import time
 import _thread
 import math
 import sys
+import gc
 # ST7789命令定义 / ST7789 COMMAND DEFINITION
 ST7789_NOP = 0x00
 ST7789_SWRESET = 0x01
@@ -157,13 +158,12 @@ class ST7789(framebuf.FrameBuffer):
             _thread.start_new_thread(self._print_fps, ())
     def DrawText(self, text:str, x:int, y:int, color:int,
                  offset = 0, wrap:bool = False, w:int = None,
-                 buffer:bytearray = super(), slope:float = 0.0,
+                 buffer:bytearray = None, slope:float = 0.0,
                  font:FontsLinker = None):
         orig_x = x + offset 
         curr_x = orig_x
         curr_y = y
-        fbuf = buffer
-        
+        fbuf = buffer if buffer else super()
         ft = self.font if font is None else font
         get_ch = ft.get_ch
         font_height = ft.height()
@@ -209,6 +209,91 @@ class ST7789(framebuf.FrameBuffer):
                 curr_y += font_height
         return total_width,font_height
     
+    def _convert_rgb888_to_rgb565_fast(self, rgb888_data, rgb565_buffer, pixel_count):
+        """
+        快速将RGB888数据转换为RGB565格式
+        使用预计算和批量操作优化速度
+        """
+        # 预计算查找表（可选，可以进一步提高速度但增加内存使用）
+        # 这里使用直接计算以平衡速度和内存
+        
+        for i in range(pixel_count):
+            src_idx = i * 3
+            dst_idx = i * 2
+            
+            r = rgb888_data[src_idx]
+            g = rgb888_data[src_idx + 1]
+            b = rgb888_data[src_idx + 2]
+            
+            # RGB888转RGB565
+            rgb565 = ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)
+            
+            # 小端序存储
+            rgb565_buffer[dst_idx] = rgb565 & 0xFF
+            rgb565_buffer[dst_idx + 1] = (rgb565 >> 8) & 0xFF
+    def load_ppm_p6_to_rgb565(self, filename, buffer=None):
+        """
+        快速加载P6格式PPM图像到RGB565帧缓冲区
+        参数:
+            filename: PPM文件路径
+            buffer: 可选的预分配缓冲区 (宽度*高度*2字节)
+        返回:
+            framebuf.FrameBuffer 对象
+        """
+        gc.collect()  # 垃圾回收以释放内存
+        
+        with open(filename, 'rb') as f:
+            # 读取文件头
+            header = f.readline().strip()
+            if header != b'P6':
+                raise ValueError("不是P6格式的PPM文件")
+            
+            # 读取尺寸行，跳过注释
+            dimensions = f.readline().strip()
+            while dimensions.startswith(b'#'):
+                dimensions = f.readline().strip()
+            
+            width, height = map(int, dimensions.split())
+            
+            # 读取最大颜色值行
+            maxval_line = f.readline().strip()
+            while maxval_line.startswith(b'#'):
+                maxval_line = f.readline().strip()
+            
+            maxval = int(maxval_line)
+            if maxval != 255:
+                raise ValueError("只支持255最大颜色值的PPM文件")
+            
+            # 计算数据开始位置
+            data_start = f.tell()
+            
+            # 计算预期文件大小
+            expected_size = data_start + width * height * 3
+            
+            # 检查文件大小
+            f.seek(0, 2)  # 移动到文件末尾
+            file_size = f.tell()
+            if file_size != expected_size:
+                raise ValueError(f"文件大小不匹配: 期望{expected_size}, 实际{file_size}")
+            
+            f.seek(data_start)  # 回到数据开始位置
+            
+            # 分配缓冲区（如果未提供）
+            if buffer is None:
+                buffer = bytearray(width * height * 2)
+            elif len(buffer) < width * height * 2:
+                raise ValueError("提供的缓冲区太小")
+            
+            # 批量读取像素数据
+            pixel_data = f.read(width * height * 3)
+            
+            # 快速转换RGB888到RGB565
+            self._convert_rgb888_to_rgb565_fast(pixel_data, buffer, width * height)
+            
+            # 创建帧缓冲区
+            return framebuf.FrameBuffer(buffer, width, height, framebuf.RGB565)
+
+
     def curved_side_rect(self, x:int, y:int, w:int, h:int, color:int) -> int:
         r = h // 2
         self.fill_circle(x + r, y + r, r, color)
